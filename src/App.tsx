@@ -3,12 +3,14 @@
  */
 
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Header, Footer } from './components/Layout';
 import { ToastContainer } from './components/common/Toast';
+import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { useToast } from './hooks';
 
 // Pages
+import { Login } from './pages/Login';
 import { Home } from './pages/Home';
 import { AnnouncementList } from './pages/AnnouncementList';
 import { PositionList } from './pages/PositionList';
@@ -24,31 +26,45 @@ function AppContent() {
 
   return (
     <BrowserRouter>
-      <div className="flex flex-col min-h-screen">
-        <Header />
-        <main className="flex-1">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/announcements" element={<AnnouncementList />} />
-            <Route path="/positions" element={<PositionList />} />
-            <Route path="/profile" element={<UserProfile />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </main>
-        <Footer />
-        <ToastContainer toasts={toasts} onClose={removeToast} />
-      </div>
+      <Routes>
+        {/* 登录页面 - 不需要保护 */}
+        <Route path="/login" element={<Login />} />
+
+        {/* 受保护的路由 */}
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <div className="flex flex-col min-h-screen">
+                <Header />
+                <main className="flex-1">
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/announcements" element={<AnnouncementList />} />
+                    <Route path="/positions" element={<PositionList />} />
+                    <Route path="/profile" element={<UserProfile />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </main>
+                <Footer />
+                <ToastContainer toasts={toasts} onClose={removeToast} />
+              </div>
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
     </BrowserRouter>
   );
 }
 
 function NotFound() {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-6xl font-bold text-gray-900">404</h1>
-        <p className="text-xl text-gray-600 mt-4">页面未找到</p>
-        <a href="/" className="mt-6 inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center card-modern p-12 max-w-md animate-scale-in">
+        <div className="text-6xl mb-4">🔍</div>
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
+        <p className="text-xl text-gray-600 mb-6">页面未找到</p>
+        <a href="/" className="btn-gradient inline-block">
           返回首页
         </a>
       </div>

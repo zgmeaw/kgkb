@@ -7,11 +7,11 @@ export enum EducationLevel {
   HIGH_SCHOOL = '高中',
   ASSOCIATE = '大专',
   BACHELOR = '本科',
-  MASTER = '硕士研究生',
-  DOCTORATE = '博士研究生',
+  MASTER = '硕士',
+  DOCTORATE = '博士',
 }
 
-// 学位类型
+// 学位类型枚举
 export enum DegreeType {
   NONE = '无学位',
   BACHELOR = '学士',
@@ -19,55 +19,47 @@ export enum DegreeType {
   DOCTORATE = '博士',
 }
 
-// 政治面貌
+// 政治面貌枚举
 export enum PoliticalStatus {
-  PARTY_MEMBER = '中共党员',
-  PROBATIONARY_PARTY_MEMBER = '中共预备党员',
-  LEAGUE_MEMBER = '共青团员',
-  DEMOCRATIC_PARTY = '民主党派',
+  MASSES = '群众',
   NON_PARTY = '群众',
+  LEAGUE_MEMBER = '共青团员',
+  PARTY_MEMBER = '中共党员',
+  DEMOCRATIC_PARTY = '民主党派',
+  OTHER = '其他',
 }
 
 // 用户档案接口
 export interface UserProfile {
-  id: string;
-  name: string;
-  gender: '男' | '女';
-  birthDate: string; // ISO 8601 格式
-  age: number;
+  id: string;                           // UUID
+  name: string;                         // 姓名
+  gender: '男' | '女';                  // 性别
+  birthDate: Date;                      // 出生日期
+  age: number;                          // 年龄（自动计算）
   
   // 教育信息
-  educationLevel: EducationLevel;
-  degree: DegreeType;
-  major: string;
-  graduationDate: string;
-  school: string;
+  educationLevel: EducationLevel;       // 学历层次
+  degree: DegreeType;                   // 学位
+  major: string;                        // 专业
+  graduationDate: Date;                 // 毕业时间
+  school: string;                       // 毕业院校
   
   // 政治面貌
-  politicalStatus: PoliticalStatus;
+  politicalStatus: PoliticalStatus;     // 政治面貌
   
   // 工作经历
-  hasWorkExperience: boolean;
-  workYears: number;
-  currentPosition?: string;
-  workDescription?: string;
+  hasWorkExperience: boolean;           // 是否有工作经验
+  workYears: number;                    // 工作年限
+  workExperience?: number;              // 工作年限（可选，0-50）
+  currentPosition?: string;             // 当前职位
+  workDescription?: string;             // 工作描述
   
-  // 其他信息
-  phoneNumber?: string;
-  email?: string;
-  idCard?: string;
-  address?: string;
+  // 联系方式
+  phoneNumber?: string;                 // 手机号
+  email?: string;                       // 邮箱
+  address?: string;                     // 地址
   
-  // 系统字段
-  createdAt: number;
-  updatedAt: number;
-}
-
-// 用户档案表单数据
-export type UserProfileFormData = Omit<UserProfile, 'id' | 'age' | 'createdAt' | 'updatedAt'>;
-
-// 用户档案验证错误
-export interface UserProfileValidationError {
-  field: keyof UserProfile;
-  message: string;
+  // 元数据
+  createdAt: Date;                      // 创建时间
+  updatedAt: Date;                      // 更新时间
 }

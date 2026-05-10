@@ -36,8 +36,8 @@ export function PositionProvider({ children }: { children: ReactNode }) {
     const newPosition: Position = {
       ...position,
       id: generateId('pos'),
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     setPositions(prev => [...prev, newPosition]);
@@ -50,8 +50,8 @@ export function PositionProvider({ children }: { children: ReactNode }) {
     const positionsWithIds = newPositions.map(pos => ({
       ...pos,
       id: generateId('pos'),
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }));
 
     setPositions(prev => [...prev, ...positionsWithIds]);
@@ -62,7 +62,7 @@ export function PositionProvider({ children }: { children: ReactNode }) {
     setPositions(prev =>
       prev.map(pos =>
         pos.id === id
-          ? { ...pos, ...updates, updatedAt: Date.now() }
+          ? { ...pos, ...updates, updatedAt: new Date() }
           : pos
       )
     );
@@ -132,22 +132,18 @@ export function PositionProvider({ children }: { children: ReactNode }) {
       total: filteredPositions.length,
       matched: filteredPositions.filter(pos => pos.isMatched).length,
       unmatched: filteredPositions.filter(pos => !pos.isMatched).length,
-      averageMatchingScore: 0,
-      byEducation: {} as any,
-      byDepartment: {} as any,
-      topDepartments: [],
-      competitionRatioRange: {
-        low: 0,
-        medium: 0,
-        high: 0,
-      },
+      averageScore: 0,
+      byEducation: {},
+      byDepartment: {},
+      highCompetition: 0,
+      lowCompetition: 0,
     };
 
     if (filteredPositions.length === 0) return stats;
 
     // 平均匹配分数
     const totalScore = filteredPositions.reduce((sum, pos) => sum + (pos.matchingScore || 0), 0);
-    stats.averageMatchingScore = totalScore / filteredPositions.length;
+    stats.averageScore = totalScore / filteredPositions.length;
 
     // 按学历统计
     filteredPositions.forEach(pos => {
@@ -161,21 +157,13 @@ export function PositionProvider({ children }: { children: ReactNode }) {
         (stats.byDepartment[pos.department] || 0) + 1;
     });
 
-    // 热门部门
-    stats.topDepartments = Object.entries(stats.byDepartment)
-      .map(([department, count]) => ({ department, count: count as number }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10);
-
     // 竞争比例范围
     filteredPositions.forEach(pos => {
       const ratio = pos.competitionRatio || 0;
       if (ratio < 10) {
-        stats.competitionRatioRange.low++;
-      } else if (ratio <= 50) {
-        stats.competitionRatioRange.medium++;
-      } else {
-        stats.competitionRatioRange.high++;
+        stats.lowCompetition++;
+      } else if (ratio >= 50) {
+        stats.highCompetition++;
       }
     });
 

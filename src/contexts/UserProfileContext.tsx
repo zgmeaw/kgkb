@@ -30,7 +30,7 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     const updatedProfile: UserProfile = {
       ...userProfile,
       ...updates,
-      updatedAt: Date.now(),
+      updatedAt: new Date(),
     };
 
     // 如果更新了出生日期，重新计算年龄

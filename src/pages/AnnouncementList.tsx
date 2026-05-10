@@ -31,10 +31,17 @@ export function AnnouncementList() {
     e.preventDefault();
 
     addAnnouncement({
-      ...formData,
+      title: formData.title,
+      organization: formData.organization,
+      announcementUrl: '',
+      type: formData.type,
       status: AnnouncementStatus.PUBLISHED,
+      publishDate: new Date(formData.publishDate),
+      registrationStartDate: new Date(formData.registrationStart),
+      registrationEndDate: new Date(formData.registrationEnd),
+      admitCardPrintDate: new Date(formData.registrationEnd),
+      examDate: new Date(formData.registrationEnd),
       requirements: [],
-      createdBy: 'user',
     });
 
     success('公告创建成功');

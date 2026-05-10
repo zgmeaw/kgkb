@@ -9,10 +9,11 @@ export const APP_DESCRIPTION = 'Civil Service Exam Position Analyzer';
 
 // LocalStorage 键名
 export const STORAGE_KEYS = {
-  USER_PROFILE: 'kgkb_user_profile',
-  ANNOUNCEMENTS: 'kgkb_announcements',
-  POSITIONS: 'kgkb_positions',
-  SCORE_HISTORY: 'kgkb_score_history',
+  ANNOUNCEMENTS: 'civil_service_announcements',
+  POSITIONS: 'civil_service_positions',
+  USER_PROFILE: 'civil_service_user_profile',
+  SCORE_HISTORY: 'civil_service_score_history',
+  APP_VERSION: 'civil_service_app_version',
   THEME: 'kgkb_theme',
   LANGUAGE: 'kgkb_language',
 } as const;
@@ -28,14 +29,21 @@ export const FILE_LIMITS = {
   ] as string[],
 } as const;
 
-// 匹配度权重配置
+// 匹配度权重配置（基于设计文档的匹配算法）
 export const MATCHING_WEIGHTS = {
-  EDUCATION: 0.25,        // 学历权重 25%
-  DEGREE: 0.20,           // 学位权重 20%
-  MAJOR: 0.25,            // 专业权重 25%
-  POLITICAL_STATUS: 0.10, // 政治面貌权重 10%
-  WORK_EXPERIENCE: 0.15,  // 工作经验权重 15%
-  AGE: 0.05,              // 年龄权重 5%
+  MAJOR: 60,              // 专业权重 60分（完全匹配60分，部分匹配30分）
+  EDUCATION: 20,          // 学历权重 20分
+  DEGREE: 10,             // 学位权重 10分
+  POLITICAL_STATUS: 10,   // 政治面貌权重 10分
+  WORK_EXPERIENCE: 10,    // 工作年限权重 10分
+  AGE: 10,                // 年龄权重 10分
+} as const;
+
+// 专业匹配分数
+export const MAJOR_MATCH_SCORES = {
+  EXACT: 60,    // 完全匹配
+  PARTIAL: 30,  // 部分匹配（包含关系）
+  NONE: 0,      // 不匹配
 } as const;
 
 // 匹配度等级
@@ -44,6 +52,52 @@ export const MATCHING_LEVELS = {
   GOOD: { min: 75, label: '良好匹配', color: 'blue' },
   FAIR: { min: 60, label: '一般匹配', color: 'yellow' },
   POOR: { min: 0, label: '匹配度低', color: 'red' },
+} as const;
+
+// 公告状态映射（用于显示状态标签和颜色）
+export const ANNOUNCEMENT_STATUS_MAP = {
+  NOT_STARTED: {
+    label: '未开始',
+    color: 'gray',
+    bgColor: 'bg-gray-100',
+    textColor: 'text-gray-800',
+    borderColor: 'border-gray-300',
+  },
+  REGISTRATION_OPEN: {
+    label: '报名中',
+    color: 'green',
+    bgColor: 'bg-green-100',
+    textColor: 'text-green-800',
+    borderColor: 'border-green-300',
+  },
+  REGISTRATION_CLOSED: {
+    label: '报名结束',
+    color: 'yellow',
+    bgColor: 'bg-yellow-100',
+    textColor: 'text-yellow-800',
+    borderColor: 'border-yellow-300',
+  },
+  ADMIT_CARD_AVAILABLE: {
+    label: '准考证打印中',
+    color: 'blue',
+    bgColor: 'bg-blue-100',
+    textColor: 'text-blue-800',
+    borderColor: 'border-blue-300',
+  },
+  EXAM_IN_PROGRESS: {
+    label: '考试进行中',
+    color: 'purple',
+    bgColor: 'bg-purple-100',
+    textColor: 'text-purple-800',
+    borderColor: 'border-purple-300',
+  },
+  COMPLETED: {
+    label: '已结束',
+    color: 'red',
+    bgColor: 'bg-red-100',
+    textColor: 'text-red-800',
+    borderColor: 'border-red-300',
+  },
 } as const;
 
 // 分页配置

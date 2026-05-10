@@ -1,266 +1,146 @@
 # 部署指南
 
-## GitHub Pages 部署
+## 快速开始
 
-### 方式一：自动部署（推荐）
-
-1. **创建GitHub仓库**
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git branch -M main
-   git remote add origin https://github.com/你的用户名/kgkb.git
-   git push -u origin main
-   ```
-
-2. **启用GitHub Pages**
-   - 进入仓库设置 (Settings)
-   - 点击左侧菜单的 "Pages"
-   - Source 选择 "GitHub Actions"
-   - 保存设置
-
-3. **自动部署**
-   - 每次推送到 main 分支会自动触发部署
-   - 部署完成后访问：`https://你的用户名.github.io/kgkb/`
-
-### 方式二：手动部署
-
-1. **构建项目**
-   ```bash
-   npm run build
-   ```
-
-2. **部署到gh-pages分支**
-   ```bash
-   npm install -g gh-pages
-   gh-pages -d dist
-   ```
-
-3. **配置GitHub Pages**
-   - 进入仓库设置
-   - Pages -> Source 选择 "gh-pages" 分支
-   - 保存设置
-
-## Cloudflare Pages 部署
-
-### 步骤
-
-1. **登录Cloudflare Dashboard**
-   - 访问 https://dash.cloudflare.com/
-   - 进入 Pages 页面
-
-2. **创建项目**
-   - 点击 "Create a project"
-   - 选择 "Connect to Git"
-   - 授权并选择你的GitHub仓库
-
-3. **配置构建设置**
-   - Framework preset: `Vite`
-   - Build command: `npm run build`
-   - Build output directory: `dist`
-   - Node version: `20`
-
-4. **部署**
-   - 点击 "Save and Deploy"
-   - 等待构建完成
-   - 访问分配的域名：`https://kgkb.pages.dev`
-
-### 自定义域名
-
-1. 在Cloudflare Pages项目设置中
-2. 点击 "Custom domains"
-3. 添加你的域名
-4. 按照提示配置DNS记录
-
-## Vercel 部署
-
-### 步骤
-
-1. **安装Vercel CLI**
-   ```bash
-   npm install -g vercel
-   ```
-
-2. **登录Vercel**
-   ```bash
-   vercel login
-   ```
-
-3. **部署**
-   ```bash
-   vercel
-   ```
-
-4. **生产部署**
-   ```bash
-   vercel --prod
-   ```
-
-### 通过GitHub集成
-
-1. 访问 https://vercel.com/
-2. 点击 "Import Project"
-3. 选择GitHub仓库
-4. 配置构建设置（自动检测Vite项目）
-5. 点击 "Deploy"
-
-## Netlify 部署
-
-### 步骤
-
-1. **登录Netlify**
-   - 访问 https://app.netlify.com/
-
-2. **创建新站点**
-   - 点击 "Add new site" -> "Import an existing project"
-   - 选择GitHub仓库
-
-3. **配置构建设置**
-   - Build command: `npm run build`
-   - Publish directory: `dist`
-
-4. **部署**
-   - 点击 "Deploy site"
-   - 等待构建完成
-
-## 本地预览生产版本
+### 1. 本地开发
 
 ```bash
-# 构建
-npm run build
-
-# 预览
-npm run preview
-```
-
-访问 http://localhost:4173
-
-## 环境变量配置
-
-如果需要配置环境变量（如API地址），创建以下文件：
-
-### 开发环境 (.env.development)
-```
-VITE_APP_TITLE=公考岗位智能分析系统（开发）
-```
-
-### 生产环境 (.env.production)
-```
-VITE_APP_TITLE=公考岗位智能分析系统
-```
-
-在代码中使用：
-```typescript
-const title = import.meta.env.VITE_APP_TITLE;
-```
-
-## 常见问题
-
-### 1. 路由404问题
-
-如果部署后刷新页面出现404，需要配置服务器重定向：
-
-**GitHub Pages**: 在 `public` 目录创建 `404.html`，内容与 `index.html` 相同
-
-**Cloudflare Pages**: 在 `public` 目录创建 `_redirects` 文件：
-```
-/*    /index.html   200
-```
-
-**Netlify**: 在 `public` 目录创建 `_redirects` 文件：
-```
-/*    /index.html   200
-```
-
-### 2. 基础路径问题
-
-如果部署在子路径（如 `https://example.com/kgkb/`），需要修改 `vite.config.ts`：
-
-```typescript
-export default defineConfig({
-  base: '/kgkb/', // 改为你的子路径
-  // ...
-})
-```
-
-### 3. 构建失败
-
-检查Node版本：
-```bash
-node --version  # 应该是 18.x 或 20.x
-```
-
-清除缓存重新安装：
-```bash
-rm -rf node_modules package-lock.json
+# 1. 安装依赖
 npm install
-npm run build
+
+# 2. 创建 .env 文件（已创建示例）
+# 编辑 .env 文件，设置您的密码
+VITE_ACCESS_PASSWORD=your_password
+
+# 3. 启动开发服务器
+npm run dev
+
+# 4. 访问 http://localhost:5173
+# 使用您设置的密码登录
 ```
 
-## 性能优化建议
+### 2. 部署到 GitHub Pages
 
-1. **启用Gzip压缩**
-   - GitHub Pages 自动启用
-   - Cloudflare Pages 自动启用
-   - 其他平台查看文档配置
+#### 步骤1：配置 GitHub Secrets
 
-2. **CDN加速**
-   - Cloudflare Pages 自带全球CDN
-   - GitHub Pages 使用Fastly CDN
-   - 可以额外配置Cloudflare CDN
+1. 进入您的 GitHub 仓库
+2. 点击 **Settings** → **Secrets and variables** → **Actions**
+3. 点击 **New repository secret**
+4. 添加以下密钥：
 
-3. **缓存策略**
-   - 静态资源自动添加hash，可以长期缓存
-   - HTML文件不缓存，确保更新及时
+| 名称 | 值 | 说明 |
+|------|-----|------|
+| `ACCESS_PASSWORD` | `your_password` | 访问密码（明文） |
+| `GITHUB_TOKEN` | `ghp_xxxxx` | GitHub Token（可选） |
 
-## 监控和分析
+#### 步骤2：推送代码
 
-### Google Analytics
-
-在 `index.html` 中添加：
-```html
-<!-- Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'GA_MEASUREMENT_ID');
-</script>
-```
-
-### Cloudflare Web Analytics
-
-在Cloudflare Pages项目设置中启用Web Analytics。
-
-## 备份和恢复
-
-### 导出数据
-在应用中使用"数据导出"功能，导出JSON文件。
-
-### 导入数据
-在应用中使用"数据导入"功能，上传JSON文件。
-
-## 更新部署
-
-### 自动部署
-推送代码到main分支即可自动部署：
 ```bash
 git add .
-git commit -m "Update features"
+git commit -m "Deploy to GitHub Pages"
 git push origin main
 ```
 
-### 手动部署
-```bash
-npm run build
-# 然后使用对应平台的CLI工具部署
-```
+#### 步骤3：等待部署
 
-## 技术支持
+- GitHub Actions 会自动构建和部署
+- 查看 **Actions** 标签页查看部署进度
+- 部署完成后，访问 `https://your-username.github.io/your-repo-name`
 
-如有问题，请查看：
-- [GitHub Issues](https://github.com/你的用户名/kgkb/issues)
-- [项目文档](./README.md)
-- [开发指南](./DEVELOPMENT.md)
+### 3. 部署到 Cloudflare Pages
+
+#### 步骤1：连接 GitHub 仓库
+
+1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)
+2. 进入 **Pages** → **Create a project**
+3. 连接您的 GitHub 仓库
+
+#### 步骤2：配置构建设置
+
+- **Framework preset**: Vite
+- **Build command**: `npm run build`
+- **Build output directory**: `dist`
+
+#### 步骤3：添加环境变量
+
+在 **Settings** → **Environment variables** 中添加：
+
+| 变量名 | 值 |
+|--------|-----|
+| `VITE_ACCESS_PASSWORD` | `your_password` |
+| `VITE_GITHUB_TOKEN` | `ghp_xxxxx` (可选) |
+
+#### 步骤4：部署
+
+点击 **Save and Deploy**，Cloudflare 会自动构建和部署。
+
+## 配置说明
+
+### 环境变量
+
+| 变量名 | 必需 | 说明 |
+|--------|------|------|
+| `VITE_ACCESS_PASSWORD` | 推荐 | 访问密码（明文） |
+| `VITE_ACCESS_PASSWORD_HASH` | 可选 | 密码的SHA-256哈希（更安全） |
+| `VITE_GITHUB_TOKEN` | 可选 | GitHub Token，用于云端存储 |
+
+**注意**：
+- `VITE_ACCESS_PASSWORD` 和 `VITE_ACCESS_PASSWORD_HASH` 二选一
+- 优先使用 `VITE_ACCESS_PASSWORD`（明文密码）
+- 如果两者都不设置，系统将允许无密码访问
+
+### GitHub Token 配置
+
+如果需要云端存储功能：
+
+1. 访问 [GitHub Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens)
+2. 点击 **Generate new token (classic)**
+3. 设置：
+   - **Note**: `KGKB Cloud Storage`
+   - **Expiration**: 选择有效期
+   - **Scopes**: 勾选 `gist`
+4. 生成并复制 Token
+
+## 故障排除
+
+### 问题1：部署后显示404
+
+**原因**：GitHub Pages 的单页应用路由问题
+
+**解决方案**：已在 `public/404.html` 中配置自动重定向
+
+### 问题2：登录失败
+
+**检查**：
+1. 确认环境变量已正确设置
+2. 检查密码是否正确
+3. 查看浏览器控制台是否有错误
+
+### 问题3：云端同步失败
+
+**检查**：
+1. 确认 `VITE_GITHUB_TOKEN` 已设置
+2. 确认 Token 有 `gist` 权限
+3. 检查网络连接
+
+## 安全建议
+
+1. **不要将 `.env` 文件提交到 Git**
+   - 已在 `.gitignore` 中配置
+   
+2. **使用强密码**
+   - 至少12位
+   - 包含大小写字母、数字和特殊字符
+
+3. **定期更新 GitHub Token**
+   - 设置合理的过期时间
+   - 定期轮换 Token
+
+4. **启用 GitHub 两步验证**
+   - 保护您的 GitHub 账户
+
+## 更多信息
+
+- [云端存储配置指南](./CLOUD_SETUP.md)
+- [开发文档](./DEVELOPMENT.md)
+- [项目说明](./README.md)

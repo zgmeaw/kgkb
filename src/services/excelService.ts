@@ -27,11 +27,9 @@ class ExcelService {
         } catch (error) {
           resolve({
             success: false,
-            totalRows: 0,
             successCount: 0,
             failureCount: 0,
-            positions: [],
-            errors: [{ row: 0, field: 'file', message: `文件解析失败: ${error}` }],
+            errors: [{ row: 0, message: `文件解析失败: ${error}` }],
           });
         }
       };
@@ -39,11 +37,9 @@ class ExcelService {
       reader.onerror = () => {
         resolve({
           success: false,
-          totalRows: 0,
           successCount: 0,
           failureCount: 0,
-          positions: [],
-          errors: [{ row: 0, field: 'file', message: '文件读取失败' }],
+          errors: [{ row: 0, message: '文件读取失败' }],
         });
       };
 
@@ -56,18 +52,16 @@ class ExcelService {
     if (data.length < 2) {
       return {
         success: false,
-        totalRows: 0,
         successCount: 0,
         failureCount: 0,
-        positions: [],
-        errors: [{ row: 0, field: 'file', message: 'Excel文件为空或格式不正确' }],
+        errors: [{ row: 0, message: 'Excel文件为空或格式不正确' }],
       };
     }
 
     const headers = data[0] as string[];
     const columnMapping = this.createColumnMapping(headers);
     const positions: Position[] = [];
-    const errors: Array<{ row: number; field: string; message: string }> = [];
+    const errors: Array<{ row: number; message: string }> = [];
 
     for (let i = 1; i < data.length; i++) {
       const row = data[i];
@@ -81,7 +75,6 @@ class ExcelService {
       } catch (error) {
         errors.push({
           row: i + 1,
-          field: 'row',
           message: `行解析失败: ${error}`,
         });
       }
@@ -89,10 +82,8 @@ class ExcelService {
 
     return {
       success: errors.length === 0,
-      totalRows: data.length - 1,
       successCount: positions.length,
       failureCount: errors.length,
-      positions,
       errors,
     };
   }
@@ -147,53 +138,53 @@ class ExcelService {
       maxAge: parseInt(getValue('maxAge')) || undefined,
       workLocation: getValue('workLocation') || '未知',
       responsibilities: getValue('responsibilities') || '详见公告',
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      importedFrom: 'excel',
+      rawData: {},
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     return position;
   }
 
   // 解析学历层次
-  private parseEducationLevel(value: string): EducationLevel {
-    const mapping: Record<string, EducationLevel> = {
-      '高中': EducationLevel.HIGH_SCHOOL,
-      '大专': EducationLevel.ASSOCIATE,
-      '本科': EducationLevel.BACHELOR,
-      '硕士': EducationLevel.MASTER,
-      '硕士研究生': EducationLevel.MASTER,
-      '博士': EducationLevel.DOCTORATE,
-      '博士研究生': EducationLevel.DOCTORATE,
+  private parseEducationLevel(value: string): string {
+    const mapping: Record<string, string> = {
+      '高中': '高中',
+      '大专': '大专',
+      '本科': '本科',
+      '硕士': '硕士',
+      '硕士研究生': '硕士',
+      '博士': '博士',
+      '博士研究生': '博士',
     };
-    return mapping[value] || EducationLevel.BACHELOR;
+    return mapping[value] || '本科';
   }
 
   // 解析学位类型
-  private parseDegreeType(value: string): DegreeType {
-    const mapping: Record<string, DegreeType> = {
-      '无': DegreeType.NONE,
-      '无学位': DegreeType.NONE,
-      '学士': DegreeType.BACHELOR,
-      '硕士': DegreeType.MASTER,
-      '博士': DegreeType.DOCTORATE,
+  private parseDegreeType(value: string): string {
+    const mapping: Record<string, string> = {
+      '无': '无学位',
+      '无学位': '无学位',
+      '学士': '学士',
+      '硕士': '硕士',
+      '博士': '博士',
     };
-    return mapping[value] || DegreeType.NONE;
+    return mapping[value] || '无学位';
   }
 
   // 解析政治面貌数组
-  private parsePoliticalStatusArray(value: string): PoliticalStatus[] {
-    if (!value) return [PoliticalStatus.NON_PARTY];
+  private parsePoliticalStatusArray(value: string): string[] {
+    if (!value) return [PoliticalStatus.MASSES];
 
     const mapping: Record<string, PoliticalStatus> = {
       '中共党员': PoliticalStatus.PARTY_MEMBER,
       '党员': PoliticalStatus.PARTY_MEMBER,
-      '中共预备党员': PoliticalStatus.PROBATIONARY_PARTY_MEMBER,
-      '预备党员': PoliticalStatus.PROBATIONARY_PARTY_MEMBER,
+      '中共预备党员': PoliticalStatus.PARTY_MEMBER,
+      '预备党员': PoliticalStatus.PARTY_MEMBER,
       '共青团员': PoliticalStatus.LEAGUE_MEMBER,
       '团员': PoliticalStatus.LEAGUE_MEMBER,
       '民主党派': PoliticalStatus.DEMOCRATIC_PARTY,
-      '群众': PoliticalStatus.NON_PARTY,
+      '群众': PoliticalStatus.MASSES,
     };
 
     const items = value.split(/[,，、]/).map(s => s.trim());
@@ -201,7 +192,7 @@ class ExcelService {
       .map(item => mapping[item])
       .filter(Boolean) as PoliticalStatus[];
 
-    return result.length > 0 ? result : [PoliticalStatus.NON_PARTY];
+    return result.length > 0 ? result : [PoliticalStatus.MASSES];
   }
 
   // 解析数组

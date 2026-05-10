@@ -35,8 +35,8 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
       id: generateId('ann'),
       positionCount: 0,
       recruitCount: 0,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     setAnnouncements(prev => [...prev, newAnnouncement]);
@@ -47,7 +47,7 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
     setAnnouncements(prev =>
       prev.map(ann =>
         ann.id === id
-          ? { ...ann, ...updates, updatedAt: Date.now() }
+          ? { ...ann, ...updates, updatedAt: new Date() }
           : ann
       )
     );
@@ -80,10 +80,11 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
   const getStatistics = useCallback((): AnnouncementStatistics => {
     const stats: AnnouncementStatistics = {
       total: announcements.length,
-      byType: {} as Record<AnnouncementType, number>,
-      byStatus: {} as Record<AnnouncementStatus, number>,
-      upcoming: 0,
+      byType: {},
+      byStatus: {},
+      published: 0,
       ongoing: 0,
+      completed: 0,
     };
 
     announcements.forEach(ann => {
@@ -95,9 +96,11 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
       
       // 即将开始和进行中
       if (ann.status === AnnouncementStatus.PUBLISHED) {
-        stats.upcoming++;
+        stats.published++;
       } else if (ann.status === AnnouncementStatus.ONGOING) {
         stats.ongoing++;
+      } else if (ann.status === AnnouncementStatus.COMPLETED) {
+        stats.completed++;
       }
     });
 

@@ -17,13 +17,13 @@ export function UserProfile() {
   const [formData, setFormData] = useState<Partial<UserProfileType>>({
     name: '',
     gender: '男',
-    birthDate: '',
+    birthDate: undefined,
     educationLevel: EducationLevel.BACHELOR,
     degree: DegreeType.BACHELOR,
     major: '',
-    graduationDate: '',
+    graduationDate: undefined,
     school: '',
-    politicalStatus: PoliticalStatus.NON_PARTY,
+    politicalStatus: PoliticalStatus.MASSES,
     hasWorkExperience: false,
     workYears: 0,
   });
@@ -112,8 +112,8 @@ export function UserProfile() {
       address: formData.address,
       currentPosition: formData.currentPosition,
       workDescription: formData.workDescription,
-      createdAt: userProfile?.createdAt || Date.now(),
-      updatedAt: Date.now(),
+      createdAt: userProfile?.createdAt || new Date(),
+      updatedAt: new Date(),
     };
 
     setUserProfile(profile);
@@ -151,8 +151,8 @@ export function UserProfile() {
                 <Input
                   label="出生日期"
                   type="date"
-                  value={formData.birthDate}
-                  onChange={(e) => handleChange('birthDate', e.target.value)}
+                  value={formData.birthDate ? (formData.birthDate instanceof Date ? formData.birthDate.toISOString().split('T')[0] : formData.birthDate) : ''}
+                  onChange={(e) => handleChange('birthDate', e.target.value ? new Date(e.target.value) : undefined)}
                   error={errors.birthDate}
                   required
                   fullWidth
@@ -220,8 +220,8 @@ export function UserProfile() {
                 <Input
                   label="毕业日期"
                   type="date"
-                  value={formData.graduationDate}
-                  onChange={(e) => handleChange('graduationDate', e.target.value)}
+                  value={formData.graduationDate ? (formData.graduationDate instanceof Date ? formData.graduationDate.toISOString().split('T')[0] : formData.graduationDate) : ''}
+                  onChange={(e) => handleChange('graduationDate', e.target.value ? new Date(e.target.value) : undefined)}
                   error={errors.graduationDate}
                   required
                   fullWidth

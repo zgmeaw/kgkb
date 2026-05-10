@@ -2,135 +2,73 @@
  * 岗位相关类型定义
  */
 
-import { EducationLevel, DegreeType, PoliticalStatus } from './user';
-
 // 岗位接口
 export interface Position {
-  id: string;
-  announcementId: string;    // 关联的公告ID
+  id: string;                           // UUID
+  announcementId: string;               // 关联的公告ID
+  code: string;                         // 岗位代码
+  name: string;                         // 岗位名称
+  department: string;                   // 招聘部门
+  category: string;                     // 岗位类别
+  recruitCount: number;                 // 招聘人数
   
-  // 基本信息
-  code: string;              // 岗位代码
-  name: string;              // 岗位名称
-  department: string;        // 招录部门
-  category: string;          // 岗位类别
-  
-  // 招录信息
-  recruitCount: number;      // 招录人数
-  registrationCount?: number; // 报名人数
-  competitionRatio?: number;  // 竞争比例
-  
-  // 岗位要求
-  educationRequirement: EducationLevel; // 学历要求
-  degreeRequirement: DegreeType;        // 学位要求
-  majorRequirement: string[];           // 专业要求
-  politicalStatusRequirement: PoliticalStatus[]; // 政治面貌要求
-  
-  // 工作经验要求
-  workExperienceRequired: boolean;
-  minWorkYears?: number;
-  maxWorkYears?: number;
-  
-  // 年龄要求
-  minAge?: number;
-  maxAge?: number;
+  // 学历要求
+  educationRequirement: string;         // 学历要求
+  degreeRequirement: string;            // 学位要求
+  majorRequirement: string[];           // 专业要求（数组）
   
   // 其他要求
-  genderRequirement?: '男' | '女' | '不限';
-  otherRequirements?: string[];
+  politicalStatusRequirement: string[]; // 政治面貌要求
+  workExperienceRequired: boolean;      // 是否要求工作经验
+  minWorkYears?: number;                // 最低工作年限
+  minAge?: number;                      // 最低年龄
+  maxAge?: number;                      // 最高年龄
   
-  // 岗位详情
-  responsibilities: string;   // 岗位职责
-  workLocation: string;       // 工作地点
-  salary?: string;            // 薪资待遇
-  benefits?: string[];        // 福利待遇
+  // 工作信息
+  workLocation: string;                 // 工作地点
+  responsibilities?: string;            // 岗位职责
   
-  // 联系方式
-  contactPerson?: string;
-  contactPhone?: string;
+  // 匹配信息
+  matchingScore?: number;               // 匹配度分数（0-100）
+  isMatched?: boolean;                  // 是否匹配
+  competitionRatio?: number;            // 竞争比例
   
-  // 匹配信息（计算字段）
-  matchingScore?: number;     // 匹配分数
-  isMatched?: boolean;        // 是否匹配
+  // 原始数据
+  rawData: Record<string, any>;         // 原始Excel数据
   
-  // 系统字段
-  createdAt: number;
-  updatedAt: number;
-  importedFrom?: string;      // 导入来源
+  // 元数据
+  createdAt: Date;                      // 创建时间
+  updatedAt?: Date;                     // 更新时间
 }
-
-// 岗位表单数据
-export type PositionFormData = Omit<Position, 'id' | 'createdAt' | 'updatedAt' | 'matchingScore' | 'isMatched'>;
 
 // 岗位筛选条件
 export interface PositionFilter {
-  announcementId?: string;
-  keyword?: string;
-  department?: string;
-  category?: string;
-  educationLevel?: EducationLevel;
-  degree?: DegreeType;
-  major?: string;
-  politicalStatus?: PoliticalStatus;
-  workExperienceRequired?: boolean;
-  minMatchingScore?: number;
-  workLocation?: string;
+  keyword?: string;                     // 关键词搜索
+  announcementId?: string;              // 公告ID
+  department?: string;                  // 部门
+  category?: string;                    // 类别
+  educationLevel?: string;              // 学历要求
+  degree?: string;                      // 学位要求
+  major?: string;                       // 专业要求
+  politicalStatus?: string;             // 政治面貌
+  workExperienceRequired?: boolean;     // 工作经验要求
+  workLocation?: string;                // 工作地点
+  minMatchingScore?: number;            // 最低匹配分数
 }
 
-// 岗位排序字段
-export type PositionSortField = 
-  | 'code'
-  | 'name'
-  | 'department'
-  | 'recruitCount'
-  | 'competitionRatio'
-  | 'matchingScore'
-  | 'createdAt';
-
-// 岗位统计
+// 岗位统计数据
 export interface PositionStatistics {
-  total: number;
-  matched: number;
-  unmatched: number;
-  averageMatchingScore: number;
-  byEducation: Record<EducationLevel, number>;
-  byDepartment: Record<string, number>;
-  topDepartments: Array<{ department: string; count: number }>;
-  competitionRatioRange: {
-    low: number;    // < 10:1
-    medium: number; // 10:1 - 50:1
-    high: number;   // > 50:1
-  };
+  total: number;                        // 总数
+  matched: number;                      // 匹配数
+  unmatched: number;                    // 不匹配数
+  averageScore: number;                 // 平均匹配分数
+  byEducation: Record<string, number>;  // 按学历统计
+  byDepartment: Record<string, number>; // 按部门统计
+  highCompetition: number;              // 高竞争岗位数
+  lowCompetition: number;               // 低竞争岗位数
 }
 
-// Excel导入映射配置
-export interface ExcelColumnMapping {
-  code: string;
-  name: string;
-  department: string;
-  category: string;
-  recruitCount: string;
-  educationRequirement: string;
-  degreeRequirement: string;
-  majorRequirement: string;
-  politicalStatusRequirement: string;
-  workExperienceRequired: string;
-  minAge: string;
-  maxAge: string;
-  workLocation: string;
-  responsibilities: string;
-}
-
-// Excel导入结果
-export interface ExcelImportResult {
-  success: boolean;
-  totalRows: number;
-  successCount: number;
-  failureCount: number;
-  positions: Position[];
-  errors: Array<{
-    row: number;
-    field: string;
-    message: string;
-  }>;
-}
+// 动态字段通过rawData访问，例如：
+// position.rawData['岗位代码']
+// position.rawData['招聘人数']
+// position.rawData['专业要求']
