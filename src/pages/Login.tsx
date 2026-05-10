@@ -9,7 +9,9 @@ import { APP_NAME } from '@/constants';
 export function Login() {
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
+  const [githubToken, setGithubToken] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showToken, setShowToken] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -34,37 +36,30 @@ export function Login() {
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
-      // 从环境变量获取密码（支持明文密码或哈希）
-      const envPassword = import.meta.env.VITE_ACCESS_PASSWORD;
-      const envPasswordHash = import.meta.env.VITE_ACCESS_PASSWORD_HASH;
+      // 从环境变量获取正确的密码哈希
+      const correctHash = import.meta.env.VITE_ACCESS_PASSWORD_HASH;
 
-      // 如果没有配置任何密码，默认允许访问
-      if (!envPassword && !envPasswordHash) {
-        sessionStorage.setItem('isLoggedIn', 'true');
-        sessionStorage.setItem('userPassword', password);
-        navigate('/', { replace: true });
+      // 如果没有设置密码哈希，拒绝访问
+      if (!correctHash) {
+        setError('系统未配置访问密码，请联系管理员');
+        setLoading(false);
         return;
       }
 
-      // 优先使用明文密码比对
-      if (envPassword) {
-        if (password === envPassword) {
-          sessionStorage.setItem('isLoggedIn', 'true');
-          sessionStorage.setItem('userPassword', password);
-          navigate('/', { replace: true });
-        } else {
-          setError('密码错误，请重试');
+      // 验证密码哈希
+      if (hashHex === correctHash) {
+        // 密码正确
+        sessionStorage.setItem('isLoggedIn', 'true');
+        sessionStorage.setItem('userPassword', password); // 保存密码用于云端加密
+        
+        // 保存 GitHub Token 到 localStorage（如果用户输入了）
+        if (githubToken.trim()) {
+          localStorage.setItem('github_token', githubToken.trim());
         }
-      } 
-      // 否则使用哈希比对
-      else if (envPasswordHash) {
-        if (hashHex === envPasswordHash) {
-          sessionStorage.setItem('isLoggedIn', 'true');
-          sessionStorage.setItem('userPassword', password);
-          navigate('/', { replace: true });
-        } else {
-          setError('密码错误，请重试');
-        }
+        
+        navigate('/', { replace: true });
+      } else {
+        setError('密码错误，请重试');
       }
     } catch (err) {
       setError('验证失败，请重试');
@@ -108,6 +103,33 @@ export function Login() {
                 {showPassword ? '🙈' : '👁️'}
               </button>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              GitHub Token（可选，用于云端存储）
+            </label>
+            <div className="relative">
+              <input
+                type={showToken ? 'text' : 'password'}
+                value={githubToken}
+                onChange={(e) => setGithubToken(e.target.value)}
+                className="input-modern pr-12"
+                placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowToken(!showToken)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xl"
+                disabled={loading}
+              >
+                {showToken ? '🙈' : '👁️'}
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              如需使用云端备份功能，请输入您的 GitHub Personal Access Token
+            </p>
           </div>
 
           {error && (

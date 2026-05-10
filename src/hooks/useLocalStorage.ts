@@ -21,14 +21,16 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
   const setValue = useCallback(
     (value: T | ((val: T) => T)) => {
       try {
-        const valueToStore = value instanceof Function ? value(storedValue) : value;
-        setStoredValue(valueToStore);
-        storageService.set(key, valueToStore);
+        setStoredValue((currentValue) => {
+          const valueToStore = value instanceof Function ? value(currentValue) : value;
+          storageService.set(key, valueToStore);
+          return valueToStore;
+        });
       } catch (error) {
         console.error(`Error saving ${key} to localStorage:`, error);
       }
     },
-    [key, storedValue]
+    [key]
   );
 
   // 删除值

@@ -11,12 +11,17 @@ interface CloudData {
 }
 
 class CloudStorageService {
-  private githubToken: string;
   private gistId: string | null;
 
   constructor() {
-    this.githubToken = import.meta.env.VITE_GITHUB_TOKEN || '';
     this.gistId = localStorage.getItem('gist_id') || null;
+  }
+
+  /**
+   * 获取 GitHub Token（从 localStorage）
+   */
+  private getGithubToken(): string {
+    return localStorage.getItem('github_token') || '';
   }
 
   /**
@@ -122,8 +127,10 @@ class CloudStorageService {
    * 上传数据到云端
    */
   async uploadData(data: CloudData, password: string): Promise<void> {
-    if (!this.githubToken) {
-      throw new Error('未配置GitHub Token');
+    const githubToken = this.getGithubToken();
+    
+    if (!githubToken) {
+      throw new Error('未配置GitHub Token，请在登录时输入或在设置中配置');
     }
 
     try {
@@ -146,7 +153,7 @@ class CloudStorageService {
         response = await fetch(`https://api.github.com/gists/${this.gistId}`, {
           method: 'PATCH',
           headers: {
-            Authorization: `token ${this.githubToken}`,
+            Authorization: `token ${githubToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(gistData),
@@ -156,7 +163,7 @@ class CloudStorageService {
         response = await fetch('https://api.github.com/gists', {
           method: 'POST',
           headers: {
-            Authorization: `token ${this.githubToken}`,
+            Authorization: `token ${githubToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(gistData),
@@ -180,8 +187,10 @@ class CloudStorageService {
    * 从云端下载数据
    */
   async downloadData(password: string): Promise<CloudData> {
-    if (!this.githubToken) {
-      throw new Error('未配置GitHub Token');
+    const githubToken = this.getGithubToken();
+    
+    if (!githubToken) {
+      throw new Error('未配置GitHub Token，请在登录时输入或在设置中配置');
     }
 
     if (!this.gistId) {
@@ -191,7 +200,7 @@ class CloudStorageService {
     try {
       const response = await fetch(`https://api.github.com/gists/${this.gistId}`, {
         headers: {
-          Authorization: `token ${this.githubToken}`,
+          Authorization: `token ${githubToken}`,
         },
       });
 
