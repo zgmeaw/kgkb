@@ -1,27 +1,50 @@
 /**
- * 云端存储服务 - 使用GitHub Gist
+ * 云端存储服务 - 支持多种存储后端
  */
 
-interface CloudData {
-  announcements: any[];
-  positions: any[];
-  userProfile: any;
-  scoreHistory: any[];
-  lastUpdated: string;
-}
+import { GistStorageBackend } from './storageBackends/gistStorageBackend';
+import { R2StorageBackend } from './storageBackends/r2StorageBackend';
+import { StorageBackend, CloudData, StorageBackendType } from './storageBackends/types';
 
 class CloudStorageService {
-  private gistId: string | null;
-
-  constructor() {
-    this.gistId = localStorage.getItem('gist_id') || null;
-  }
+  private backend: StorageBackend | null = null;
 
   /**
-   * 获取 GitHub Token（从 localStorage）
+   * 初始化存储后端
    */
-  private getGithubToken(): string {
-    return localStorage.getItem('github_token') || '';
+  private initBackend(): StorageBackend {
+    if (this.backend) {
+      return this.backend;
+    }
+
+    // 从环境变量或 localStorage 获取配置
+    const backendType = (import.meta.env.VITE_STORAGE_BACKEND as StorageBackendType) || StorageBackendType.GITHUB_GIST;
+
+    switch (backendType) {
+      case StorageBackendType.CLOUDFLARE_R2:
+        const r2Config = {
+          workerUrl: import.meta.env.VITE_R2_WORKER_URL || localStorage.getItem('r2_worker_url') || '',
+          apiKey: import.meta.env.VITE_R2_API_KEY || localStorage.getItem('r2_api_key') || '',
+        };
+        
+        if (!r2Config.workerUrl || !r2Config.apiKey) {
+          throw new Error('Cloudflare R2 配置不完整');
+        }
+        
+        this.backend = new R2StorageBackend(r2Config);
+        break;
+
+      case StorageBackendType.GITHUB_GIST:
+      default:
+        const githubToken = localStorage.getItem('github_token') || '';
+        if (!githubToken) {
+          throw new Error('未配置 GitHub Token');
+        }
+        this.backend = new GistStorageBackend(githubToken);
+        break;
+    }
+
+    return this.backend;
   }
 
   /**
@@ -127,56 +150,11 @@ class CloudStorageService {
    * 上传数据到云端
    */
   async uploadData(data: CloudData, password: string): Promise<void> {
-    const githubToken = this.getGithubToken();
-    
-    if (!githubToken) {
-      throw new Error('未配置GitHub Token，请在登录时输入或在设置中配置');
-    }
-
     try {
+      const backend = this.initBackend();
       const jsonData = JSON.stringify(data);
       const encryptedData = await this.encryptData(jsonData, password);
-
-      const gistData = {
-        description: '公考岗位分析系统 - 云端数据备份',
-        public: false,
-        files: {
-          'kgkb-data.enc': {
-            content: encryptedData,
-          },
-        },
-      };
-
-      let response;
-      if (this.gistId) {
-        // 更新现有Gist
-        response = await fetch(`https://api.github.com/gists/${this.gistId}`, {
-          method: 'PATCH',
-          headers: {
-            Authorization: `token ${githubToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(gistData),
-        });
-      } else {
-        // 创建新Gist
-        response = await fetch('https://api.github.com/gists', {
-          method: 'POST',
-          headers: {
-            Authorization: `token ${githubToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(gistData),
-        });
-      }
-
-      if (!response.ok) {
-        throw new Error(`上传失败: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      this.gistId = result.id;
-      localStorage.setItem('gist_id', result.id);
+      await backend.upload(data, encryptedData);
     } catch (error) {
       console.error('上传数据失败:', error);
       throw error;
@@ -187,30 +165,9 @@ class CloudStorageService {
    * 从云端下载数据
    */
   async downloadData(password: string): Promise<CloudData> {
-    const githubToken = this.getGithubToken();
-    
-    if (!githubToken) {
-      throw new Error('未配置GitHub Token，请在登录时输入或在设置中配置');
-    }
-
-    if (!this.gistId) {
-      throw new Error('未找到云端数据');
-    }
-
     try {
-      const response = await fetch(`https://api.github.com/gists/${this.gistId}`, {
-        headers: {
-          Authorization: `token ${githubToken}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`下载失败: ${response.statusText}`);
-      }
-
-      const gist = await response.json();
-      const encryptedData = gist.files['kgkb-data.enc'].content;
-
+      const backend = this.initBackend();
+      const encryptedData = await backend.download();
       const decryptedData = await this.decryptData(encryptedData, password);
       return JSON.parse(decryptedData);
     } catch (error) {
@@ -223,15 +180,24 @@ class CloudStorageService {
    * 检查是否有云端数据
    */
   hasCloudData(): boolean {
-    return !!this.gistId;
+    try {
+      const backend = this.initBackend();
+      return backend.hasCloudData();
+    } catch {
+      return false;
+    }
   }
 
   /**
    * 清除云端数据引用
    */
   clearCloudReference(): void {
-    this.gistId = null;
-    localStorage.removeItem('gist_id');
+    try {
+      const backend = this.initBackend();
+      backend.clearCloudReference();
+    } catch (error) {
+      console.error('清除云端引用失败:', error);
+    }
   }
 }
 

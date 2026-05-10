@@ -33,6 +33,9 @@ jobs:
       - name: Create .env file
         run: |
           echo "VITE_ACCESS_PASSWORD_HASH=${{ secrets.ACCESS_PASSWORD_HASH }}" >> .env
+          echo "VITE_STORAGE_BACKEND=${{ secrets.STORAGE_BACKEND || 'github_gist' }}" >> .env
+          echo "VITE_R2_WORKER_URL=${{ secrets.R2_WORKER_URL }}" >> .env
+          echo "VITE_R2_API_KEY=${{ secrets.R2_API_KEY }}" >> .env
 
       - name: Build
         run: npm run build

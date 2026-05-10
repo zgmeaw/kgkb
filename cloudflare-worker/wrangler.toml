@@ -1,0 +1,20 @@
+# Cloudflare Worker 配置文件
+
+name = "kgkb-r2-worker"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# R2 Bucket 绑定
+[[r2_buckets]]
+binding = "KGKB_BUCKET"
+bucket_name = "kgkb-data"
+
+# 环境变量（API Key）
+[vars]
+# API_KEY 应该在 Cloudflare Dashboard 中设置为 Secret
+# 不要在这里硬编码
+
+# 部署配置
+[env.production]
+name = "kgkb-r2-worker"
+route = "https://kgkb-storage.your-domain.workers.dev/*"
