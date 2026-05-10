@@ -7,6 +7,7 @@ import { Position, PositionFilter, PositionStatistics } from '@/types';
 import { STORAGE_KEYS } from '@/constants';
 import { useLocalStorage } from '@/hooks';
 import { generateId } from '@/utils';
+import { triggerDataChange } from '@/services';
 
 interface PositionContextType {
   positions: Position[];
@@ -41,6 +42,7 @@ export function PositionProvider({ children }: { children: ReactNode }) {
     };
 
     setPositions(prev => [...prev, newPosition]);
+    triggerDataChange(); // 触发自动备份
     return newPosition;
   }, [setPositions]);
 
@@ -55,6 +57,7 @@ export function PositionProvider({ children }: { children: ReactNode }) {
     }));
 
     setPositions(prev => [...prev, ...positionsWithIds]);
+    triggerDataChange(); // 触发自动备份
     return positionsWithIds;
   }, [setPositions]);
 
@@ -66,14 +69,17 @@ export function PositionProvider({ children }: { children: ReactNode }) {
           : pos
       )
     );
+    triggerDataChange(); // 触发自动备份
   }, [setPositions]);
 
   const deletePosition = useCallback((id: string) => {
     setPositions(prev => prev.filter(pos => pos.id !== id));
+    triggerDataChange(); // 触发自动备份
   }, [setPositions]);
 
   const deletePositionsByAnnouncement = useCallback((announcementId: string) => {
     setPositions(prev => prev.filter(pos => pos.announcementId !== announcementId));
+    triggerDataChange(); // 触发自动备份
   }, [setPositions]);
 
   const getPositionById = useCallback((id: string) => {

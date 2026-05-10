@@ -2,12 +2,13 @@
  * 应用主组件
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Header, Footer } from './components/Layout';
 import { ToastContainer } from './components/common/Toast';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { useToast } from './hooks';
+import { autoBackupService } from './services';
 
 // Pages
 import { Login } from './pages/Login';
@@ -23,6 +24,14 @@ import { PositionProvider } from './contexts/PositionContext';
 
 function AppContent() {
   const { toasts, removeToast } = useToast();
+
+  // 初始化自动备份服务
+  useEffect(() => {
+    autoBackupService.init();
+    return () => {
+      autoBackupService.cleanup();
+    };
+  }, []);
 
   return (
     <BrowserRouter>

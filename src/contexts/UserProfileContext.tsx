@@ -7,6 +7,7 @@ import { UserProfile } from '@/types';
 import { STORAGE_KEYS } from '@/constants';
 import { useLocalStorage } from '@/hooks';
 import { calculateAge } from '@/utils';
+import { triggerDataChange } from '@/services';
 
 interface UserProfileContextType {
   userProfile: UserProfile | null;
@@ -19,10 +20,15 @@ interface UserProfileContextType {
 const UserProfileContext = createContext<UserProfileContextType | undefined>(undefined);
 
 export function UserProfileProvider({ children }: { children: ReactNode }) {
-  const [userProfile, setUserProfile, clearUserProfile] = useLocalStorage<UserProfile | null>(
+  const [userProfile, setUserProfileInternal, clearUserProfile] = useLocalStorage<UserProfile | null>(
     STORAGE_KEYS.USER_PROFILE,
     null
   );
+
+  const setUserProfile = (profile: UserProfile | null) => {
+    setUserProfileInternal(profile);
+    triggerDataChange(); // 触发自动备份
+  };
 
   const updateUserProfile = (updates: Partial<UserProfile>) => {
     if (!userProfile) return;

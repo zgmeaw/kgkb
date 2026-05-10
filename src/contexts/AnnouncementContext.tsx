@@ -7,6 +7,7 @@ import { Announcement, AnnouncementFilter, AnnouncementStatistics, AnnouncementS
 import { STORAGE_KEYS } from '@/constants';
 import { useLocalStorage } from '@/hooks';
 import { generateId } from '@/utils';
+import { triggerDataChange } from '@/services';
 
 interface AnnouncementContextType {
   announcements: Announcement[];
@@ -40,6 +41,7 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
     };
 
     setAnnouncements(prev => [...prev, newAnnouncement]);
+    triggerDataChange(); // 触发自动备份
     return newAnnouncement;
   }, [setAnnouncements]);
 
@@ -51,10 +53,12 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
           : ann
       )
     );
+    triggerDataChange(); // 触发自动备份
   }, [setAnnouncements]);
 
   const deleteAnnouncement = useCallback((id: string) => {
     setAnnouncements(prev => prev.filter(ann => ann.id !== id));
+    triggerDataChange(); // 触发自动备份
   }, [setAnnouncements]);
 
   const getAnnouncementById = useCallback((id: string) => {

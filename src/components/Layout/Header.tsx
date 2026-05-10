@@ -5,7 +5,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { APP_NAME } from '@/constants';
-import { CloudSyncButton } from '@/components/common/CloudSyncButton';
 
 export function Header() {
   const location = useLocation();
@@ -64,11 +63,6 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
-            
-            {/* Cloud Sync */}
-            <div className="ml-4">
-              <CloudSyncButton />
-            </div>
 
             {/* Logout */}
             <button
@@ -114,10 +108,6 @@ export function Header() {
                   {item.label}
                 </Link>
               ))}
-              
-              <div className="px-6 py-3">
-                <CloudSyncButton />
-              </div>
 
               <button
                 onClick={handleLogout}

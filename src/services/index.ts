@@ -5,3 +5,5 @@
 export * from './storageService';
 export * from './excelService';
 export * from './matchingService';
+export * from './cloudStorageService';
+export * from './autoBackupService';
