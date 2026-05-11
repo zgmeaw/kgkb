@@ -9,3 +9,4 @@ export * from './Modal';
 export * from './Toast';
 export * from './Loading';
 export * from './Card';
+export * from './ConfigStatus';

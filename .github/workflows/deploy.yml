@@ -36,6 +36,9 @@ jobs:
           echo "VITE_STORAGE_BACKEND=${{ secrets.STORAGE_BACKEND || 'github_gist' }}" >> .env
           echo "VITE_R2_WORKER_URL=${{ secrets.R2_WORKER_URL }}" >> .env
           echo "VITE_R2_API_KEY=${{ secrets.R2_API_KEY }}" >> .env
+          echo "VITE_GITHUB_OWNER=${{ secrets.VITE_GITHUB_OWNER }}" >> .env
+          echo "VITE_GITHUB_REPO=${{ secrets.VITE_GITHUB_REPO }}" >> .env
+          echo "VITE_GITHUB_TOKEN=${{ secrets.VITE_GITHUB_TOKEN }}" >> .env
 
       - name: Build
         run: npm run build

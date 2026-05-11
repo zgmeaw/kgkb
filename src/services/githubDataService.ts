@@ -15,33 +15,35 @@ interface GitHubDispatchPayload {
 }
 
 class GitHubDataService {
-  private readonly repoOwner: string;
-  private readonly repoName: string;
-  private readonly token: string;
-
-  constructor() {
-    // 从环境变量或配置中获取仓库信息
-    this.repoOwner = import.meta.env.VITE_GITHUB_OWNER || '';
-    this.repoName = import.meta.env.VITE_GITHUB_REPO || '';
-    this.token = import.meta.env.VITE_GITHUB_TOKEN || '';
+  /**
+   * 从 localStorage 获取 GitHub 配置
+   */
+  private getConfig() {
+    return {
+      owner: localStorage.getItem('github_owner') || '',
+      repo: localStorage.getItem('github_repo') || '',
+      token: localStorage.getItem('github_token') || '',
+    };
   }
 
   /**
    * 触发 GitHub Actions 工作流
    */
   private async dispatchAction(payload: GitHubDispatchPayload): Promise<void> {
-    if (!this.token || !this.repoOwner || !this.repoName) {
+    const config = this.getConfig();
+    
+    if (!config.token || !config.owner || !config.repo) {
       console.warn('GitHub 配置不完整，跳过文件保存');
       return;
     }
 
     try {
       const response = await fetch(
-        `https://api.github.com/repos/${this.repoOwner}/${this.repoName}/dispatches`,
+        `https://api.github.com/repos/${config.owner}/${config.repo}/dispatches`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `token ${this.token}`,
+            'Authorization': `token ${config.token}`,
             'Accept': 'application/vnd.github.v3+json',
             'Content-Type': 'application/json',
           },
@@ -50,7 +52,8 @@ class GitHubDataService {
       );
 
       if (!response.ok) {
-        throw new Error(`GitHub API 错误: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`GitHub API 错误: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       console.log(`✅ GitHub Actions 已触发: ${payload.event_type}`);
@@ -191,23 +194,43 @@ class GitHubDataService {
    * 检查 GitHub 配置是否可用
    */
   isConfigured(): boolean {
-    return !!(this.token && this.repoOwner && this.repoName);
+    const config = this.getConfig();
+    return !!(config.token && config.owner && config.repo);
   }
 
   /**
    * 获取配置状态
    */
   getConfigStatus(): { configured: boolean; missing: string[] } {
+    const config = this.getConfig();
     const missing: string[] = [];
     
-    if (!this.repoOwner) missing.push('VITE_GITHUB_OWNER');
-    if (!this.repoName) missing.push('VITE_GITHUB_REPO');
-    if (!this.token) missing.push('VITE_GITHUB_TOKEN');
+    if (!config.owner) missing.push('GitHub Owner');
+    if (!config.repo) missing.push('GitHub Repo');
+    if (!config.token) missing.push('GitHub Token');
 
     return {
       configured: missing.length === 0,
       missing,
     };
+  }
+
+  /**
+   * 保存 GitHub 配置到 localStorage
+   */
+  saveConfig(owner: string, repo: string, token: string): void {
+    localStorage.setItem('github_owner', owner);
+    localStorage.setItem('github_repo', repo);
+    localStorage.setItem('github_token', token);
+  }
+
+  /**
+   * 清除 GitHub 配置
+   */
+  clearConfig(): void {
+    localStorage.removeItem('github_owner');
+    localStorage.removeItem('github_repo');
+    localStorage.removeItem('github_token');
   }
 }
 
