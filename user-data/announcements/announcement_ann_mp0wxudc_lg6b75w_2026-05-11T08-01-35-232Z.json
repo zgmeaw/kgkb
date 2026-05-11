@@ -1,0 +1,29 @@
+{
+  "type": "announcement",
+  "version": "1.0",
+  "timestamp": "2026-05-11T08:01:35.232Z",
+  "data": {
+    "title": "测试",
+    "organization": "测试",
+    "announcementUrl": "",
+    "type": "国考",
+    "status": "已发布",
+    "publishDate": "2026-04-30T00:00:00.000Z",
+    "registrationStartDate": "2026-05-08T00:00:00.000Z",
+    "registrationEndDate": "2026-05-14T00:00:00.000Z",
+    "admitCardPrintDate": "2026-05-14T00:00:00.000Z",
+    "examDate": "2026-05-29T00:00:00.000Z",
+    "requirements": [],
+    "id": "ann_mp0wxudc_lg6b75w",
+    "positionCount": 0,
+    "recruitCount": 0,
+    "createdAt": "2026-05-11T08:01:35.232Z",
+    "updatedAt": "2026-05-11T08:01:35.232Z"
+  },
+  "metadata": {
+    "announcementId": "ann_mp0wxudc_lg6b75w",
+    "title": "测试",
+    "organization": "测试",
+    "publishDate": "2026-04-30T00:00:00.000Z"
+  }
+}
