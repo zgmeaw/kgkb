@@ -27,6 +27,16 @@ export function PositionList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
 
+  // 从 URL 参数读取公告 ID
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const announcementId = urlParams.get('announcement');
+    if (announcementId) {
+      setSelectedAnnouncement(announcementId);
+      console.log(`📋 从 URL 参数加载公告: ${announcementId}`);
+    }
+  }, []);
+
   useEffect(() => {
     applyFilters();
   }, [positions, keyword, selectedAnnouncement, userProfile]);
@@ -39,16 +49,21 @@ export function PositionList() {
   const applyFilters = () => {
     setLoading(true);
     
+    console.log(`🔍 开始筛选岗位 - 总数: ${positions.length}, 关键词: "${keyword}", 公告: ${selectedAnnouncement || '全部'}`);
+    
     let filtered = filterPositions({
       keyword: keyword || undefined,
       announcementId: selectedAnnouncement || undefined,
     });
+
+    console.log(`✅ 筛选后岗位数: ${filtered.length}`);
 
     // 如果有用户档案，计算匹配度
     if (userProfile) {
       filtered = matchingService.calculateBatchMatchingScores(filtered, userProfile);
       // 按匹配度排序
       filtered.sort((a, b) => (b.matchingScore || 0) - (a.matchingScore || 0));
+      console.log(`📊 已计算匹配度并排序`);
     }
 
     setFilteredPositions(filtered);

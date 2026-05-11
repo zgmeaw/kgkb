@@ -154,7 +154,7 @@ export function useLocalStorage<T>(
     }
   }, [key, initialValue]);
 
-  // 监听其他标签页的变化
+  // 监听其他标签页的变化和登录成功事件
   useEffect(() => {
     // 如果 skipLocalStorage 为 true，不监听 storage 事件
     if (skipLocalStorageRef.current) {
@@ -171,8 +171,26 @@ export function useLocalStorage<T>(
       }
     };
 
+    // 监听登录成功事件，重新从 localStorage 加载数据
+    const handleLoginSuccess = () => {
+      try {
+        const item = storageService.get<T>(key);
+        if (item !== null) {
+          setStoredValue(item);
+          console.log(`✅ ${key} 数据已从云端恢复`);
+        }
+      } catch (error) {
+        console.error(`Error reloading ${key} after login:`, error);
+      }
+    };
+
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('loginSuccess', handleLoginSuccess);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('loginSuccess', handleLoginSuccess);
+    };
   }, [key]);
 
   return [storedValue, setValue, removeValue, lastError] as const;
