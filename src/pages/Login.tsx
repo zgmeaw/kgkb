@@ -4,7 +4,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { APP_NAME } from '@/constants';
+import { APP_NAME, STORAGE_KEYS } from '@/constants';
+import { cloudStorageService, storageService } from '@/services';
 
 export function Login() {
   const navigate = useNavigate();
@@ -55,6 +56,39 @@ export function Login() {
         // 保存 GitHub Token 到 localStorage（如果用户输入了）
         if (githubToken.trim()) {
           localStorage.setItem('github_token', githubToken.trim());
+        }
+        
+        // 尝试从云端恢复数据
+        try {
+          if (githubToken.trim()) {
+            setError('正在从云端恢复数据...');
+            const hasData = await cloudStorageService.hasCloudData();
+            
+            if (hasData) {
+              const cloudData = await cloudStorageService.downloadData(password);
+              
+              // 恢复数据到 localStorage
+              if (cloudData.announcements) {
+                storageService.set(STORAGE_KEYS.ANNOUNCEMENTS, cloudData.announcements);
+              }
+              if (cloudData.positions) {
+                storageService.set(STORAGE_KEYS.POSITIONS, cloudData.positions);
+              }
+              if (cloudData.userProfile) {
+                storageService.set(STORAGE_KEYS.USER_PROFILE, cloudData.userProfile);
+              }
+              if (cloudData.scoreHistory) {
+                storageService.set(STORAGE_KEYS.SCORE_HISTORY, cloudData.scoreHistory);
+              }
+              
+              console.log('✅ 云端数据恢复成功');
+            } else {
+              console.log('ℹ️ 未找到云端数据，使用本地数据');
+            }
+          }
+        } catch (cloudError) {
+          console.warn('云端数据恢复失败，使用本地数据:', cloudError);
+          // 不阻止登录，继续使用本地数据
         }
         
         navigate('/', { replace: true });

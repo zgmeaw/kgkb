@@ -179,10 +179,10 @@ class CloudStorageService {
   /**
    * 检查是否有云端数据
    */
-  hasCloudData(): boolean {
+  async hasCloudData(): Promise<boolean> {
     try {
       const backend = this.initBackend();
-      return backend.hasCloudData();
+      return await backend.hasCloudData();
     } catch {
       return false;
     }

@@ -13,7 +13,47 @@ export class GistStorageBackend implements StorageBackend {
     this.gistId = localStorage.getItem('gist_id') || null;
   }
 
+  /**
+   * 查找用户的 KGKB Gist
+   */
+  async findKgkbGist(): Promise<string | null> {
+    try {
+      const response = await fetch('https://api.github.com/gists', {
+        headers: {
+          Authorization: `token ${this.githubToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`获取 Gist 列表失败: ${response.statusText}`);
+      }
+
+      const gists = await response.json();
+      
+      // 查找描述包含 "公考岗位分析系统" 的 Gist
+      const kgkbGist = gists.find((gist: any) => 
+        gist.description && gist.description.includes('公考岗位分析系统')
+      );
+
+      if (kgkbGist) {
+        this.gistId = kgkbGist.id;
+        localStorage.setItem('gist_id', kgkbGist.id);
+        return kgkbGist.id;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('查找 Gist 失败:', error);
+      return null;
+    }
+  }
+
   async upload(data: CloudData, encryptedData: string): Promise<void> {
+    // 如果没有 gistId，先尝试查找
+    if (!this.gistId) {
+      await this.findKgkbGist();
+    }
+
     const gistData = {
       description: '公考岗位分析系统 - 云端数据备份',
       public: false,
@@ -57,6 +97,11 @@ export class GistStorageBackend implements StorageBackend {
   }
 
   async download(): Promise<string> {
+    // 如果没有 gistId，先尝试查找
+    if (!this.gistId) {
+      await this.findKgkbGist();
+    }
+
     if (!this.gistId) {
       throw new Error('未找到云端数据');
     }
@@ -75,8 +120,15 @@ export class GistStorageBackend implements StorageBackend {
     return gist.files['kgkb-data.enc'].content;
   }
 
-  hasCloudData(): boolean {
-    return !!this.gistId;
+  async hasCloudData(): Promise<boolean> {
+    // 如果本地有 gistId，直接返回 true
+    if (this.gistId) {
+      return true;
+    }
+
+    // 否则尝试查找
+    const foundId = await this.findKgkbGist();
+    return !!foundId;
   }
 
   clearCloudReference(): void {

@@ -72,8 +72,37 @@ export class R2StorageBackend implements StorageBackend {
   /**
    * 检查是否有云端数据
    */
-  hasCloudData(): boolean {
-    return !!localStorage.getItem('r2_latest_file');
+  async hasCloudData(): Promise<boolean> {
+    const localFile = localStorage.getItem('r2_latest_file');
+    if (localFile) {
+      return true;
+    }
+
+    // 尝试获取文件列表
+    try {
+      const response = await fetch(`${this.workerUrl}/list`, {
+        headers: {
+          'X-API-Key': this.apiKey,
+        },
+      });
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const result = await response.json();
+      if (result.files && result.files.length > 0) {
+        // 保存最新的文件名
+        const latestFile = result.files[0];
+        localStorage.setItem('r2_latest_file', latestFile);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('检查 R2 数据失败:', error);
+      return false;
+    }
   }
 
   /**

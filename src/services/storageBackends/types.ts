@@ -24,7 +24,7 @@ export interface StorageBackend {
   /**
    * 检查是否有云端数据
    */
-  hasCloudData(): boolean;
+  hasCloudData(): Promise<boolean>;
 
   /**
    * 清除云端数据引用
