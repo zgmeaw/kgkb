@@ -7,7 +7,7 @@ import { Container } from '@/components/Layout';
 import { Button, Input, Select, Card } from '@/components/common';
 import { useUserProfile } from '@/contexts';
 import { UserProfile as UserProfileType, EducationLevel, DegreeType, PoliticalStatus } from '@/types';
-import { generateId, calculateAge, validateName, validateEmail, validatePhone } from '@/utils';
+import { generateId, calculateAge, validateName, validateEmail, validatePhone, formatDateForInput } from '@/utils';
 import { useToast } from '@/hooks';
 
 export function UserProfile() {
@@ -151,7 +151,7 @@ export function UserProfile() {
                 <Input
                   label="出生日期"
                   type="date"
-                  value={formData.birthDate ? (formData.birthDate instanceof Date ? formData.birthDate.toISOString().split('T')[0] : formData.birthDate) : ''}
+                  value={formatDateForInput(formData.birthDate)}
                   onChange={(e) => handleChange('birthDate', e.target.value ? new Date(e.target.value) : undefined)}
                   error={errors.birthDate}
                   required
@@ -220,7 +220,7 @@ export function UserProfile() {
                 <Input
                   label="毕业日期"
                   type="date"
-                  value={formData.graduationDate ? (formData.graduationDate instanceof Date ? formData.graduationDate.toISOString().split('T')[0] : formData.graduationDate) : ''}
+                  value={formatDateForInput(formData.graduationDate)}
                   onChange={(e) => handleChange('graduationDate', e.target.value ? new Date(e.target.value) : undefined)}
                   error={errors.graduationDate}
                   required

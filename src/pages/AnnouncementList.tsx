@@ -144,9 +144,8 @@ export function AnnouncementList() {
               return (
                 <div
                   key={announcement.id}
-                  className="group relative overflow-hidden rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer animate-slide-in border border-gray-100"
+                  className="group relative overflow-hidden rounded-2xl bg-white shadow-lg hover:shadow-2xl transition-all duration-500 border border-gray-100 animate-slide-in"
                   style={{ animationDelay: `${index * 50}ms` }}
-                  onClick={() => navigate(`/announcements/${announcement.id}`)}
                 >
                   {/* 渐变背景装饰 */}
                   <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full blur-3xl opacity-30 group-hover:opacity-50 transition-opacity duration-500 -z-0" />

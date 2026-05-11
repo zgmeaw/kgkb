@@ -47,8 +47,10 @@ export function PositionList() {
   };
 
   const handleUploadSuccess = (newPositions: Position[]) => {
+    console.log('📥 准备添加岗位:', newPositions.length, '个');
+    console.log('📊 岗位数据:', newPositions);
     addPositions(newPositions);
-    success(`成功导入 ${newPositions.length} 个岗位`);
+    success(`成功导入 ${newPositions.length} 个岗位，数据将自动备份到云端`);
     setShowUploader(false);
   };
 

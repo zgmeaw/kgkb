@@ -198,3 +198,22 @@ export const extractGenderFromIdCard = (idCard: string): '男' | '女' | null =>
     return null;
   }
 };
+
+// 将Date对象转换为yyyy-MM-dd格式（用于input[type="date"]）
+export const formatDateForInput = (date: Date | string | undefined): string => {
+  if (!date) return '';
+  
+  try {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (!isValid(dateObj)) return '';
+    
+    // 使用本地时间，避免UTC时区问题
+    const year = dateObj.getFullYear();
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+  } catch {
+    return '';
+  }
+};
