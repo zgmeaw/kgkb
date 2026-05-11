@@ -19,7 +19,8 @@ class CloudStorageService {
     }
 
     // 从环境变量或 localStorage 获取配置
-    const backendType = (import.meta.env.VITE_STORAGE_BACKEND as StorageBackendType) || StorageBackendType.GITHUB_GIST;
+    // 默认使用 R2 后端以支持大数据集
+    const backendType = (import.meta.env.VITE_STORAGE_BACKEND as StorageBackendType) || StorageBackendType.CLOUDFLARE_R2;
 
     switch (backendType) {
       case StorageBackendType.CLOUDFLARE_R2:
@@ -28,8 +29,15 @@ class CloudStorageService {
           apiKey: import.meta.env.VITE_R2_API_KEY || localStorage.getItem('r2_api_key') || '',
         };
         
+        // 如果 R2 配置不完整，回退到 Gist 后端
         if (!r2Config.workerUrl || !r2Config.apiKey) {
-          throw new Error('Cloudflare R2 配置不完整');
+          console.warn('R2 配置不完整，回退到 Gist 后端');
+          const githubToken = localStorage.getItem('github_token') || '';
+          if (!githubToken) {
+            throw new Error('未配置 GitHub Token，且 R2 配置不完整');
+          }
+          this.backend = new GistStorageBackend(githubToken);
+          break;
         }
         
         this.backend = new R2StorageBackend(r2Config);

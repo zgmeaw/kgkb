@@ -3,6 +3,13 @@
  */
 
 import { STORAGE_KEYS } from '@/constants';
+import { cloudStorageService } from './cloudStorageService';
+
+// 存储大小阈值：4MB
+const STORAGE_SIZE_THRESHOLD = 4 * 1024 * 1024;
+
+// localStorage 配额限制（保守估计 5MB）
+const LOCALSTORAGE_QUOTA = 5 * 1024 * 1024;
 
 class StorageService {
   // 获取数据
@@ -17,12 +24,96 @@ class StorageService {
     }
   }
 
-  // 保存数据
-  set<T>(key: string, value: T): boolean {
+  // 估算数据大小（字节）
+  estimateDataSize(value: any): number {
     try {
+      // UTF-16 编码，每个字符占 2 字节
+      return JSON.stringify(value).length * 2;
+    } catch (error) {
+      console.error('Error estimating data size:', error);
+      return 0;
+    }
+  }
+
+  // 获取可用空间（字节）
+  getAvailableSpace(): number {
+    try {
+      const usedSpace = this.getSize();
+      return LOCALSTORAGE_QUOTA - usedSpace;
+    } catch (error) {
+      console.error('Error calculating available space:', error);
+      return 0;
+    }
+  }
+
+  // 保存数据
+  async set<T>(key: string, value: T): Promise<boolean | { success: false; reason: string; dataSize?: number; error?: any }> {
+    try {
+      // 估算数据大小
+      const dataSize = this.estimateDataSize(value);
+      
+      // 检查是否超过大小阈值 - 自动使用云端存储
+      if (dataSize > STORAGE_SIZE_THRESHOLD) {
+        console.log(`数据量较大 (${(dataSize / 1024 / 1024).toFixed(2)}MB)，使用云端存储`);
+        
+        try {
+          // 尝试保存到云端存储
+          await this.saveToCloudStorage(key, value);
+          return true; // 成功保存到云端
+        } catch (cloudError) {
+          console.error('云端存储失败，尝试 localStorage:', cloudError);
+          // 云端存储失败，继续尝试 localStorage
+        }
+      }
+      
+      // 检查可用空间是否足够
+      const availableSpace = this.getAvailableSpace();
+      if (dataSize > availableSpace) {
+        console.log(`localStorage 空间不足，使用云端存储`);
+        
+        try {
+          // 尝试保存到云端存储
+          await this.saveToCloudStorage(key, value);
+          return true; // 成功保存到云端
+        } catch (cloudError) {
+          console.error('云端存储失败:', cloudError);
+          return {
+            success: false,
+            reason: 'quota_exceeded',
+            dataSize
+          };
+        }
+      }
+      
+      // 尝试写入 localStorage
       localStorage.setItem(key, JSON.stringify(value));
       return true;
-    } catch (error) {
+    } catch (error: any) {
+      // 明确检查 QuotaExceededError
+      if (error.name === 'QuotaExceededError') {
+        const dataSize = this.estimateDataSize(value);
+        const usedSpace = this.getSize();
+        console.error(
+          `QuotaExceededError writing to localStorage (${key}):`,
+          `Data size: ${(dataSize / 1024 / 1024).toFixed(2)}MB,`,
+          `Used space: ${(usedSpace / 1024 / 1024).toFixed(2)}MB,`,
+          `Quota: ${(LOCALSTORAGE_QUOTA / 1024 / 1024).toFixed(2)}MB`
+        );
+        
+        try {
+          // QuotaExceededError 发生时，尝试云端存储
+          await this.saveToCloudStorage(key, value);
+          return true; // 成功保存到云端
+        } catch (cloudError) {
+          console.error('云端存储失败:', cloudError);
+          return {
+            success: false,
+            reason: 'quota_exceeded_error',
+            error
+          };
+        }
+      }
+      
       console.error(`Error writing to localStorage (${key}):`, error);
       return false;
     }
@@ -102,11 +193,11 @@ class StorageService {
   }
 
   // 导入数据
-  importAll(data: Record<string, any>): boolean {
+  async importAll(data: Record<string, any>): Promise<boolean> {
     try {
       for (const key in data) {
         if (data.hasOwnProperty(key)) {
-          this.set(key, data[key]);
+          await this.set(key, data[key]);
         }
       }
       return true;
@@ -128,7 +219,42 @@ class StorageService {
       return false;
     }
   }
+
+  /**
+   * 保存数据到云端存储
+   * 这是一个简化的实现，实际应用中可能需要更复杂的逻辑
+   */
+  private async saveToCloudStorage<T>(key: string, value: T): Promise<void> {
+    // 检查是否已登录和配置
+    const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+    if (isLoggedIn !== 'true') {
+      throw new Error('未登录，无法使用云端存储');
+    }
+
+    // 获取用户密码（用于加密）
+    const userPassword = sessionStorage.getItem('userPassword');
+    if (!userPassword) {
+      throw new Error('未找到用户密码，无法使用云端存储');
+    }
+
+    // 构造云端数据格式 - 符合 CloudData 接口
+    const cloudData: any = {
+      announcements: key === 'announcements' ? value : [],
+      positions: key === 'positions' ? value : [],
+      userProfile: key === 'userProfile' ? value : null,
+      scoreHistory: key === 'scoreHistory' ? value : [],
+      lastUpdated: new Date().toISOString(),
+    };
+
+    // 上传到云端存储
+    await cloudStorageService.uploadData(cloudData, userPassword);
+    
+    console.log(`✅ 数据已保存到云端存储: ${key}`);
+  }
 }
 
 // 导出单例
 export const storageService = new StorageService();
+
+// 导出常量供其他模块使用
+export { STORAGE_SIZE_THRESHOLD };

@@ -20,13 +20,15 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": false,
 
+    /* Test types */
+    "types": ["vitest/globals"],
+
     /* Path mapping */
-    "ignoreDeprecations": "6.0",
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"],
+  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/__tests__/**/*", "src/test/**/*"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
