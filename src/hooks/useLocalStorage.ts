@@ -61,7 +61,12 @@ export function useLocalStorage<T>(
           
           // 但仍然尝试保存到 localStorage（用于备份），失败就忽略
           try {
-            await storageService.set(key, valueToStore);
+            const result = await storageService.set(key, valueToStore);
+            if (result === true) {
+              console.log(`✅ ${key}: 数据已保存到 localStorage`);
+            } else {
+              console.warn(`⚠️ ${key}: 无法保存到 localStorage（空间不足）`);
+            }
           } catch (e) {
             // 忽略错误，数据已经在内存中
           }
@@ -94,10 +99,14 @@ export function useLocalStorage<T>(
           
           // 尝试保存到 localStorage（用于备份），失败就忽略
           try {
-            await storageService.set(key, valueToStore);
-            console.log(`✅ ${key}: 大数据已保存到 localStorage 用于备份`);
+            const result = await storageService.set(key, valueToStore);
+            if (result === true) {
+              console.log(`✅ ${key}: 大数据已保存到 localStorage 用于备份`);
+            } else {
+              console.warn(`⚠️ ${key}: 无法保存到 localStorage（空间不足），仅保存到云端`);
+            }
           } catch (e) {
-            console.warn(`⚠️ ${key}: 无法保存到 localStorage，将仅保存到云端`);
+            console.warn(`⚠️ ${key}: 无法保存到 localStorage，仅保存到云端`);
           }
           
           return;
