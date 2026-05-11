@@ -1,0 +1,29 @@
+{
+  "type": "user_profile",
+  "version": "1.0",
+  "timestamp": "2026-05-11T08:48:58.503Z",
+  "data": {
+    "id": "user_mp0yms92_4jtgrqr",
+    "name": "阿旺",
+    "gender": "男",
+    "birthDate": "2001-12-12T00:00:00.000Z",
+    "age": 24,
+    "educationLevel": "本科",
+    "degree": "学士",
+    "major": "计算机科学与技术",
+    "graduationDate": "2025-06-12T00:00:00.000Z",
+    "school": "云南大学滇池学院",
+    "politicalStatus": "群众",
+    "hasWorkExperience": false,
+    "workYears": 0,
+    "phoneNumber": "18508701266",
+    "email": "zgmeaw@163.com",
+    "createdAt": "2026-05-11T08:48:58.502Z",
+    "updatedAt": "2026-05-11T08:48:58.502Z"
+  },
+  "metadata": {
+    "userId": "user_mp0yms92_4jtgrqr",
+    "userName": "阿旺",
+    "lastUpdated": "2026-05-11T08:48:58.502Z"
+  }
+}
