@@ -52,6 +52,8 @@ class StorageService {
       // 估算数据大小
       const dataSize = this.estimateDataSize(value);
       
+      let savedToCloud = false;
+      
       // 检查是否超过大小阈值 - 自动使用云端存储
       if (dataSize > STORAGE_SIZE_THRESHOLD) {
         console.log(`数据量较大 (${(dataSize / 1024 / 1024).toFixed(2)}MB)，使用云端存储`);
@@ -59,7 +61,8 @@ class StorageService {
         try {
           // 尝试保存到云端存储
           await this.saveToCloudStorage(key, value);
-          return true; // 成功保存到云端
+          savedToCloud = true;
+          console.log(`✅ 数据已保存到云端存储: ${key}`);
         } catch (cloudError) {
           console.error('云端存储失败，尝试 localStorage:', cloudError);
           // 云端存储失败，继续尝试 localStorage
@@ -69,51 +72,73 @@ class StorageService {
       // 检查可用空间是否足够
       const availableSpace = this.getAvailableSpace();
       if (dataSize > availableSpace) {
-        console.log(`localStorage 空间不足，使用云端存储`);
+        console.log(`localStorage 空间不足`);
         
-        try {
-          // 尝试保存到云端存储
-          await this.saveToCloudStorage(key, value);
-          return true; // 成功保存到云端
-        } catch (cloudError) {
-          console.error('云端存储失败:', cloudError);
+        // 如果还没有保存到云端，尝试保存
+        if (!savedToCloud) {
+          try {
+            await this.saveToCloudStorage(key, value);
+            savedToCloud = true;
+            console.log(`✅ 数据已保存到云端存储: ${key}`);
+          } catch (cloudError) {
+            console.error('云端存储失败:', cloudError);
+            return {
+              success: false,
+              reason: 'quota_exceeded',
+              dataSize
+            };
+          }
+        }
+        
+        // 如果已经保存到云端，返回成功（即使 localStorage 失败）
+        if (savedToCloud) {
           return {
             success: false,
-            reason: 'quota_exceeded',
+            reason: 'size_threshold_exceeded',
             dataSize
           };
         }
       }
       
       // 尝试写入 localStorage
-      localStorage.setItem(key, JSON.stringify(value));
-      return true;
-    } catch (error: any) {
-      // 明确检查 QuotaExceededError
-      if (error.name === 'QuotaExceededError') {
-        const dataSize = this.estimateDataSize(value);
-        const usedSpace = this.getSize();
-        console.error(
-          `QuotaExceededError writing to localStorage (${key}):`,
-          `Data size: ${(dataSize / 1024 / 1024).toFixed(2)}MB,`,
-          `Used space: ${(usedSpace / 1024 / 1024).toFixed(2)}MB,`,
-          `Quota: ${(LOCALSTORAGE_QUOTA / 1024 / 1024).toFixed(2)}MB`
-        );
-        
-        try {
-          // QuotaExceededError 发生时，尝试云端存储
-          await this.saveToCloudStorage(key, value);
-          return true; // 成功保存到云端
-        } catch (cloudError) {
-          console.error('云端存储失败:', cloudError);
-          return {
-            success: false,
-            reason: 'quota_exceeded_error',
-            error
-          };
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+        console.log(`✅ 数据已保存到 localStorage: ${key} (${(dataSize / 1024 / 1024).toFixed(2)}MB)`);
+        return true;
+      } catch (localError: any) {
+        // localStorage 写入失败
+        if (localError.name === 'QuotaExceededError') {
+          console.warn(`⚠️ localStorage 配额不足，但数据${savedToCloud ? '已' : '未'}保存到云端`);
+          
+          // 如果还没有保存到云端，尝试保存
+          if (!savedToCloud) {
+            try {
+              await this.saveToCloudStorage(key, value);
+              savedToCloud = true;
+              console.log(`✅ 数据已保存到云端存储: ${key}`);
+            } catch (cloudError) {
+              console.error('云端存储失败:', cloudError);
+              return {
+                success: false,
+                reason: 'quota_exceeded_error',
+                error: localError
+              };
+            }
+          }
+          
+          // 如果已经保存到云端，返回成功
+          if (savedToCloud) {
+            return {
+              success: false,
+              reason: 'size_threshold_exceeded',
+              dataSize
+            };
+          }
         }
+        
+        throw localError;
       }
-      
+    } catch (error: any) {
       console.error(`Error writing to localStorage (${key}):`, error);
       return false;
     }
@@ -248,8 +273,6 @@ class StorageService {
 
     // 上传到云端存储
     await cloudStorageService.uploadData(cloudData, userPassword);
-    
-    console.log(`✅ 数据已保存到云端存储: ${key}`);
   }
 }
 
