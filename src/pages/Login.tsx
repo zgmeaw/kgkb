@@ -11,11 +11,8 @@ export function Login() {
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [githubToken, setGithubToken] = useState('');
-  const [githubOwner, setGithubOwner] = useState('');
-  const [githubRepo, setGithubRepo] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showToken, setShowToken] = useState(false);
-  const [showGithubConfig, setShowGithubConfig] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -56,15 +53,10 @@ export function Login() {
         sessionStorage.setItem('isLoggedIn', 'true');
         sessionStorage.setItem('userPassword', password); // 保存密码用于云端加密
         
-        // 保存 GitHub 配置到 localStorage（如果用户输入了）
-        if (githubToken.trim() && githubOwner.trim() && githubRepo.trim()) {
+        // 保存 GitHub Token 到 localStorage（如果用户输入了）
+        if (githubToken.trim()) {
           localStorage.setItem('github_token', githubToken.trim());
-          localStorage.setItem('github_owner', githubOwner.trim());
-          localStorage.setItem('github_repo', githubRepo.trim());
-          console.log('✅ GitHub 文件系统配置已保存');
-        } else if (githubToken.trim()) {
-          // 只有 token，用于 Gist 云端存储
-          localStorage.setItem('github_token', githubToken.trim());
+          console.log('✅ GitHub Token 已保存');
         }
         
         // 尝试从云端恢复数据
@@ -150,7 +142,7 @@ export function Login() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              GitHub Token（可选，用于云端存储）
+              GitHub Token（可选）
             </label>
             <div className="relative">
               <input
@@ -171,51 +163,8 @@ export function Login() {
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              如需使用云端备份功能，请输入您的 GitHub Personal Access Token
+              用于云端存储和自动保存数据文件到 GitHub 仓库
             </p>
-            
-            {/* GitHub 文件系统配置（可选） */}
-            <button
-              type="button"
-              onClick={() => setShowGithubConfig(!showGithubConfig)}
-              className="text-xs text-blue-600 hover:text-blue-700 mt-2 flex items-center"
-            >
-              {showGithubConfig ? '▼' : '▶'} 高级：配置 GitHub 文件系统存储
-            </button>
-            
-            {showGithubConfig && (
-              <div className="mt-3 space-y-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    GitHub 用户名
-                  </label>
-                  <input
-                    type="text"
-                    value={githubOwner}
-                    onChange={(e) => setGithubOwner(e.target.value)}
-                    className="input-modern text-sm"
-                    placeholder="your-username"
-                    disabled={loading}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    仓库名称
-                  </label>
-                  <input
-                    type="text"
-                    value={githubRepo}
-                    onChange={(e) => setGithubRepo(e.target.value)}
-                    className="input-modern text-sm"
-                    placeholder="your-repo-name"
-                    disabled={loading}
-                  />
-                </div>
-                <p className="text-xs text-gray-600">
-                  💡 配置后，数据将自动保存为仓库文件，支持版本控制和历史记录
-                </p>
-              </div>
-            )}
           </div>
 
           {error && (

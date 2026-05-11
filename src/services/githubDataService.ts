@@ -20,8 +20,8 @@ class GitHubDataService {
    */
   private getConfig() {
     return {
-      owner: localStorage.getItem('github_owner') || '',
-      repo: localStorage.getItem('github_repo') || '',
+      owner: 'zgmeaw', // 写死的 GitHub 用户名
+      repo: 'kgkb',    // 写死的仓库名
       token: localStorage.getItem('github_token') || '',
     };
   }
@@ -205,8 +205,6 @@ class GitHubDataService {
     const config = this.getConfig();
     const missing: string[] = [];
     
-    if (!config.owner) missing.push('GitHub Owner');
-    if (!config.repo) missing.push('GitHub Repo');
     if (!config.token) missing.push('GitHub Token');
 
     return {
@@ -216,20 +214,16 @@ class GitHubDataService {
   }
 
   /**
-   * 保存 GitHub 配置到 localStorage
+   * 保存 GitHub Token 到 localStorage
    */
-  saveConfig(owner: string, repo: string, token: string): void {
-    localStorage.setItem('github_owner', owner);
-    localStorage.setItem('github_repo', repo);
+  saveToken(token: string): void {
     localStorage.setItem('github_token', token);
   }
 
   /**
-   * 清除 GitHub 配置
+   * 清除 GitHub Token
    */
-  clearConfig(): void {
-    localStorage.removeItem('github_owner');
-    localStorage.removeItem('github_repo');
+  clearToken(): void {
     localStorage.removeItem('github_token');
   }
 }
