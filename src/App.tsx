@@ -53,6 +53,8 @@ function AppContent() {
             if (success) {
               console.log('✅ 云端数据初始化成功');
               setLoadingStatus('数据加载完成');
+              // 触发页面刷新以更新 Context
+              window.dispatchEvent(new Event('storage'));
             } else {
               console.log('ℹ️ 未找到云端数据或初始化失败，使用本地数据');
               setLoadingStatus('使用本地数据');
@@ -83,8 +85,18 @@ function AppContent() {
 
     initializeApp();
 
+    // 监听登录事件，重新初始化数据
+    const handleLoginSuccess = () => {
+      setIsLoadingCloudData(true);
+      setCloudInitError(null);
+      initializeApp();
+    };
+
+    window.addEventListener('loginSuccess', handleLoginSuccess);
+
     return () => {
       autoBackupService.cleanup();
+      window.removeEventListener('loginSuccess', handleLoginSuccess);
     };
   }, []);
 

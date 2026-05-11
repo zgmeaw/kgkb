@@ -60,6 +60,7 @@ export function Login() {
         }
         
         // 尝试从云端恢复数据
+        let dataRestored = false;
         try {
           if (githubToken.trim()) {
             setError('正在从云端恢复数据...');
@@ -70,19 +71,20 @@ export function Login() {
               
               // 恢复数据到 localStorage
               if (cloudData.announcements) {
-                storageService.set(STORAGE_KEYS.ANNOUNCEMENTS, cloudData.announcements);
+                await storageService.set(STORAGE_KEYS.ANNOUNCEMENTS, cloudData.announcements);
               }
               if (cloudData.positions) {
-                storageService.set(STORAGE_KEYS.POSITIONS, cloudData.positions);
+                await storageService.set(STORAGE_KEYS.POSITIONS, cloudData.positions);
               }
               if (cloudData.userProfile) {
-                storageService.set(STORAGE_KEYS.USER_PROFILE, cloudData.userProfile);
+                await storageService.set(STORAGE_KEYS.USER_PROFILE, cloudData.userProfile);
               }
               if (cloudData.scoreHistory) {
-                storageService.set(STORAGE_KEYS.SCORE_HISTORY, cloudData.scoreHistory);
+                await storageService.set(STORAGE_KEYS.SCORE_HISTORY, cloudData.scoreHistory);
               }
               
               console.log('✅ 云端数据恢复成功');
+              dataRestored = true;
             } else {
               console.log('ℹ️ 未找到云端数据，使用本地数据');
             }
@@ -92,6 +94,15 @@ export function Login() {
           // 不阻止登录，继续使用本地数据
         }
         
+        // 如果恢复了数据，等待一下让 Context 重新加载
+        if (dataRestored) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        // 触发登录成功事件，让 App 重新加载数据
+        window.dispatchEvent(new Event('loginSuccess'));
+        
+        // 导航到首页
         navigate('/', { replace: true });
       } else {
         setError('密码错误，请重试');

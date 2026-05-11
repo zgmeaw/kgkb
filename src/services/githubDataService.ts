@@ -134,7 +134,7 @@ class GitHubDataService {
   }
 
   /**
-   * 保存岗位数据到文件（分批处理大数据）
+   * 保存岗位数据到文件（分批处理大数据，添加延迟避免并发）
    */
   async savePositions(positions: Position[], announcementId: string): Promise<void> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -177,6 +177,11 @@ class GitHubDataService {
         
         await this.createOrUpdateFile(path, content, message);
         console.log(`✅ 批次 ${i + 1}/${totalBatches} 已保存 (${batch.length} 个岗位)`);
+        
+        // 添加延迟，避免触发太多 GitHub Actions
+        if (i < totalBatches - 1) {
+          await new Promise(resolve => setTimeout(resolve, 2000)); // 每批之间延迟2秒
+        }
       }
       
       console.log(`🎉 所有岗位数据已保存完成！共 ${positions.length} 个岗位，分 ${totalBatches} 个文件`);
