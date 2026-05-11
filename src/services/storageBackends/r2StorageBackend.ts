@@ -92,9 +92,13 @@ export class R2StorageBackend implements StorageBackend {
 
       const result = await response.json();
       if (result.files && result.files.length > 0) {
-        // 保存最新的文件名
-        const latestFile = result.files[0];
-        localStorage.setItem('r2_latest_file', latestFile);
+        // 保存最新的文件名（按上传时间排序，取最新的）
+        const sortedFiles = result.files.sort((a: any, b: any) => 
+          new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime()
+        );
+        const latestFile = sortedFiles[0];
+        localStorage.setItem('r2_latest_file', latestFile.key);  // ✅ 使用 .key 属性
+        console.log(`✅ 找到云端数据文件: ${latestFile.key}`);
         return true;
       }
 
