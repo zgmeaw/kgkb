@@ -7,12 +7,12 @@ import { Position, PositionFilter, PositionStatistics } from '@/types';
 import { STORAGE_KEYS } from '@/constants';
 import { useLocalStorage } from '@/hooks';
 import { generateId } from '@/utils';
-import { triggerDataChange } from '@/services';
+import { triggerDataChange, githubDataService } from '@/services';
 
 interface PositionContextType {
   positions: Position[];
-  addPosition: (position: Omit<Position, 'id' | 'createdAt' | 'updatedAt'>) => Position;
-  addPositions: (positions: Omit<Position, 'id' | 'createdAt' | 'updatedAt'>[]) => Position[];
+  addPosition: (position: Omit<Position, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Position>;
+  addPositions: (positions: Omit<Position, 'id' | 'createdAt' | 'updatedAt'>[]) => Promise<Position[]>;
   updatePosition: (id: string, updates: Partial<Position>) => void;
   deletePosition: (id: string) => void;
   deletePositionsByAnnouncement: (announcementId: string) => void;
@@ -31,9 +31,9 @@ export function PositionProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const addPosition = useCallback((
+  const addPosition = useCallback(async (
     position: Omit<Position, 'id' | 'createdAt' | 'updatedAt'>
-  ): Position => {
+  ): Promise<Position> => {
     const newPosition: Position = {
       ...position,
       id: generateId('pos'),
@@ -46,9 +46,9 @@ export function PositionProvider({ children }: { children: ReactNode }) {
     return newPosition;
   }, [setPositions]);
 
-  const addPositions = useCallback((
+  const addPositions = useCallback(async (
     newPositions: Omit<Position, 'id' | 'createdAt' | 'updatedAt'>[]
-  ): Position[] => {
+  ): Promise<Position[]> => {
     const positionsWithIds = newPositions.map(pos => ({
       ...pos,
       id: generateId('pos'),
@@ -58,6 +58,18 @@ export function PositionProvider({ children }: { children: ReactNode }) {
 
     setPositions(prev => [...prev, ...positionsWithIds]);
     triggerDataChange(); // 触发自动备份
+    
+    // 保存到 GitHub 文件系统
+    if (positionsWithIds.length > 0) {
+      try {
+        await githubDataService.savePositions(positionsWithIds, positionsWithIds[0].announcementId);
+        console.log(`✅ ${positionsWithIds.length} 个岗位已保存到文件系统`);
+      } catch (error) {
+        console.error('❌ 岗位文件系统保存失败:', error);
+        // 不影响主要功能，只记录错误
+      }
+    }
+    
     return positionsWithIds;
   }, [setPositions]);
 

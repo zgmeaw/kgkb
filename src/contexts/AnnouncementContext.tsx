@@ -7,12 +7,12 @@ import { Announcement, AnnouncementFilter, AnnouncementStatistics, AnnouncementS
 import { STORAGE_KEYS } from '@/constants';
 import { useLocalStorage } from '@/hooks';
 import { generateId } from '@/utils';
-import { triggerDataChange } from '@/services';
+import { triggerDataChange, githubDataService } from '@/services';
 
 interface AnnouncementContextType {
   announcements: Announcement[];
-  addAnnouncement: (announcement: Omit<Announcement, 'id' | 'createdAt' | 'updatedAt' | 'positionCount' | 'recruitCount'>) => Announcement;
-  updateAnnouncement: (id: string, updates: Partial<Announcement>) => void;
+  addAnnouncement: (announcement: Omit<Announcement, 'id' | 'createdAt' | 'updatedAt' | 'positionCount' | 'recruitCount'>) => Promise<Announcement>;
+  updateAnnouncement: (id: string, updates: Partial<Announcement>) => Promise<void>;
   deleteAnnouncement: (id: string) => void;
   getAnnouncementById: (id: string) => Announcement | undefined;
   filterAnnouncements: (filter: AnnouncementFilter) => Announcement[];
@@ -28,9 +28,9 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const addAnnouncement = useCallback((
+  const addAnnouncement = useCallback(async (
     announcement: Omit<Announcement, 'id' | 'createdAt' | 'updatedAt' | 'positionCount' | 'recruitCount'>
-  ): Announcement => {
+  ): Promise<Announcement> => {
     const newAnnouncement: Announcement = {
       ...announcement,
       id: generateId('ann'),
@@ -42,18 +42,44 @@ export function AnnouncementProvider({ children }: { children: ReactNode }) {
 
     setAnnouncements(prev => [...prev, newAnnouncement]);
     triggerDataChange(); // 触发自动备份
+    
+    // 保存到 GitHub 文件系统
+    try {
+      await githubDataService.saveAnnouncement(newAnnouncement);
+      console.log('✅ 公告已保存到文件系统');
+    } catch (error) {
+      console.error('❌ 公告文件系统保存失败:', error);
+      // 不影响主要功能，只记录错误
+    }
+    
     return newAnnouncement;
   }, [setAnnouncements]);
 
-  const updateAnnouncement = useCallback((id: string, updates: Partial<Announcement>) => {
+  const updateAnnouncement = useCallback(async (id: string, updates: Partial<Announcement>) => {
+    let updatedAnnouncement: Announcement | undefined;
+    
     setAnnouncements(prev =>
-      prev.map(ann =>
-        ann.id === id
-          ? { ...ann, ...updates, updatedAt: new Date() }
-          : ann
-      )
+      prev.map(ann => {
+        if (ann.id === id) {
+          updatedAnnouncement = { ...ann, ...updates, updatedAt: new Date() };
+          return updatedAnnouncement;
+        }
+        return ann;
+      })
     );
+    
     triggerDataChange(); // 触发自动备份
+    
+    // 保存到 GitHub 文件系统
+    if (updatedAnnouncement) {
+      try {
+        await githubDataService.saveAnnouncement(updatedAnnouncement);
+        console.log('✅ 公告更新已保存到文件系统');
+      } catch (error) {
+        console.error('❌ 公告更新文件系统保存失败:', error);
+        // 不影响主要功能，只记录错误
+      }
+    }
   }, [setAnnouncements]);
 
   const deleteAnnouncement = useCallback((id: string) => {

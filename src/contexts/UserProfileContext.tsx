@@ -7,7 +7,7 @@ import { UserProfile } from '@/types';
 import { STORAGE_KEYS } from '@/constants';
 import { useLocalStorage } from '@/hooks';
 import { calculateAge } from '@/utils';
-import { triggerDataChange } from '@/services';
+import { triggerDataChange, githubDataService } from '@/services';
 
 interface UserProfileContextType {
   userProfile: UserProfile | null;
@@ -25,12 +25,23 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
     null
   );
 
-  const setUserProfile = (profile: UserProfile | null) => {
+  const setUserProfile = async (profile: UserProfile | null) => {
     setUserProfileInternal(profile);
     triggerDataChange(); // 触发自动备份
+    
+    // 保存到 GitHub 文件系统
+    if (profile) {
+      try {
+        await githubDataService.saveUserProfile(profile);
+        console.log('✅ 用户档案已保存到文件系统');
+      } catch (error) {
+        console.error('❌ 文件系统保存失败:', error);
+        // 不影响主要功能，只记录错误
+      }
+    }
   };
 
-  const updateUserProfile = (updates: Partial<UserProfile>) => {
+  const updateUserProfile = async (updates: Partial<UserProfile>) => {
     if (!userProfile) return;
 
     const updatedProfile: UserProfile = {
@@ -44,7 +55,7 @@ export function UserProfileProvider({ children }: { children: ReactNode }) {
       updatedProfile.age = calculateAge(updates.birthDate);
     }
 
-    setUserProfile(updatedProfile);
+    await setUserProfile(updatedProfile);
   };
 
   const value: UserProfileContextType = {
