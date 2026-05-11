@@ -56,7 +56,7 @@ export function PositionProvider({ children }: { children: ReactNode }) {
       updatedAt: new Date(),
     }));
 
-    setPositions(prev => [...prev, ...positionsWithIds]);
+    await setPositions(prev => [...prev, ...positionsWithIds]);
     triggerDataChange(); // 触发自动备份
     
     // 保存到 GitHub 文件系统

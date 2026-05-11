@@ -58,6 +58,14 @@ export function useLocalStorage<T>(
         // 如果 skipLocalStorage 为 true，只更新内存状态
         if (skipLocalStorageRef.current) {
           setStoredValue(valueToStore);
+          
+          // 但仍然尝试保存到 localStorage（用于备份），失败就忽略
+          try {
+            await storageService.set(key, valueToStore);
+          } catch (e) {
+            // 忽略错误，数据已经在内存中
+          }
+          
           return;
         }
 
@@ -83,6 +91,15 @@ export function useLocalStorage<T>(
           // 自动切换到 skipLocalStorage 模式
           skipLocalStorageRef.current = true;
           setStoredValue(valueToStore);
+          
+          // 尝试保存到 localStorage（用于备份），失败就忽略
+          try {
+            await storageService.set(key, valueToStore);
+            console.log(`✅ ${key}: 大数据已保存到 localStorage 用于备份`);
+          } catch (e) {
+            console.warn(`⚠️ ${key}: 无法保存到 localStorage，将仅保存到云端`);
+          }
+          
           return;
         }
 
