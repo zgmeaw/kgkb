@@ -5,6 +5,7 @@
 import { GistStorageBackend } from './storageBackends/gistStorageBackend';
 import { R2StorageBackend } from './storageBackends/r2StorageBackend';
 import { StorageBackend, CloudData, StorageBackendType } from './storageBackends/types';
+import { STORAGE_KEYS } from '@/constants';
 
 class CloudStorageService {
   private backend: StorageBackend | null = null;
@@ -197,6 +198,100 @@ class CloudStorageService {
       backend.clearCloudReference();
     } catch (error) {
       console.error('清除云端引用失败:', error);
+    }
+  }
+
+  /**
+   * 从云端初始化数据到本地存储
+   * 用于在新设备或清除缓存后恢复用户数据
+   * 
+   * @param password - 用于解密云端数据的密码
+   * @param onProgress - 可选的进度回调函数，用于显示加载状态
+   * @returns Promise<boolean> - 成功返回 true，失败返回 false
+   */
+  async initializeFromCloud(
+    password: string,
+    onProgress?: (status: string) => void
+  ): Promise<boolean> {
+    try {
+      // 1. 检查用户是否已认证
+      onProgress?.('检查认证状态...');
+      const githubToken = localStorage.getItem('github_token');
+      if (!githubToken) {
+        console.warn('用户未认证，无法从云端初始化数据');
+        return false;
+      }
+
+      // 2. 检查是否有云端数据
+      onProgress?.('检查云端数据...');
+      const hasData = await this.hasCloudData();
+      if (!hasData) {
+        console.info('云端没有数据，跳过初始化');
+        return false;
+      }
+
+      // 3. 从云端下载数据
+      onProgress?.('正在下载云端数据...');
+      const cloudData = await this.downloadData(password);
+
+      // 4. 验证下载的数据结构
+      if (!cloudData || typeof cloudData !== 'object') {
+        throw new Error('云端数据格式无效');
+      }
+
+      // 5. 将数据写入 localStorage
+      onProgress?.('正在同步到本地存储...');
+      
+      // 写入公告数据
+      if (cloudData.announcements) {
+        localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(cloudData.announcements));
+      }
+
+      // 写入职位数据
+      if (cloudData.positions) {
+        localStorage.setItem(STORAGE_KEYS.POSITIONS, JSON.stringify(cloudData.positions));
+      }
+
+      // 写入用户配置数据
+      if (cloudData.userProfile) {
+        localStorage.setItem(STORAGE_KEYS.USER_PROFILE, JSON.stringify(cloudData.userProfile));
+      }
+
+      // 写入评分历史数据（如果存在）
+      if (cloudData.scoreHistory) {
+        localStorage.setItem(STORAGE_KEYS.SCORE_HISTORY, JSON.stringify(cloudData.scoreHistory));
+      }
+
+      // 记录最后更新时间
+      if (cloudData.lastUpdated) {
+        localStorage.setItem('lastCloudSync', cloudData.lastUpdated);
+      }
+
+      onProgress?.('数据同步完成');
+      console.info('成功从云端初始化数据到本地存储');
+      return true;
+
+    } catch (error) {
+      // 详细的错误处理
+      if (error instanceof Error) {
+        if (error.message.includes('解密失败')) {
+          console.error('解密失败，密码可能不正确:', error);
+          onProgress?.('解密失败：密码不正确');
+        } else if (error.message.includes('网络') || error.message.includes('fetch')) {
+          console.error('网络错误，无法连接到云端存储:', error);
+          onProgress?.('网络错误：无法连接到云端存储');
+        } else if (error.message.includes('未配置')) {
+          console.error('存储后端配置错误:', error);
+          onProgress?.('配置错误：存储后端未正确配置');
+        } else {
+          console.error('从云端初始化数据失败:', error);
+          onProgress?.(`初始化失败：${error.message}`);
+        }
+      } else {
+        console.error('从云端初始化数据失败（未知错误）:', error);
+        onProgress?.('初始化失败：未知错误');
+      }
+      return false;
     }
   }
 }
