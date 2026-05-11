@@ -30,6 +30,7 @@ class ExcelService {
             successCount: 0,
             failureCount: 0,
             errors: [{ row: 0, message: `文件解析失败: ${error}` }],
+            positions: [],
           });
         }
       };
@@ -40,6 +41,7 @@ class ExcelService {
           successCount: 0,
           failureCount: 0,
           errors: [{ row: 0, message: '文件读取失败' }],
+          positions: [],
         });
       };
 
@@ -55,6 +57,7 @@ class ExcelService {
         successCount: 0,
         failureCount: 0,
         errors: [{ row: 0, message: 'Excel文件为空或格式不正确' }],
+        positions: [],
       };
     }
 
@@ -85,6 +88,7 @@ class ExcelService {
       successCount: positions.length,
       failureCount: errors.length,
       errors,
+      positions, // 添加positions字段
     };
   }
 

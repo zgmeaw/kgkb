@@ -23,15 +23,19 @@ export function ExcelUploader({ announcementId, onUploadSuccess, onUploadError }
     const file = event.target.files?.[0];
     if (!file) return;
 
+    console.log('📁 选择的文件:', file.name, file.size, 'bytes');
+
     // 验证文件
     const sizeError = validateFileSize(file, FILE_LIMITS.MAX_SIZE);
     if (sizeError) {
+      console.error('❌ 文件大小验证失败:', sizeError);
       onUploadError(sizeError);
       return;
     }
 
     const typeError = validateFileType(file, FILE_LIMITS.ALLOWED_TYPES);
     if (typeError) {
+      console.error('❌ 文件类型验证失败:', typeError);
       onUploadError(typeError);
       return;
     }
@@ -40,19 +44,25 @@ export function ExcelUploader({ announcementId, onUploadSuccess, onUploadError }
     setUploading(true);
 
     try {
+      console.log('🔄 开始解析Excel文件...');
       const result = await excelService.parseExcelFile(file, announcementId);
+      console.log('📊 解析结果:', result);
 
       if (result.errors.length > 0) {
         const errorMsg = `导入完成，但有 ${result.failureCount} 条记录失败。\n${result.errors.slice(0, 3).map(e => `第${e.row}行: ${e.message}`).join('\n')}`;
+        console.warn('⚠️ 导入有错误:', errorMsg);
         onUploadError(errorMsg);
       }
 
-      if (result.positions.length > 0) {
+      if (result.positions && result.positions.length > 0) {
+        console.log('✅ 成功解析岗位数据:', result.positions.length, '个');
         onUploadSuccess(result.positions);
       } else {
-        onUploadError('未能解析到有效的岗位数据');
+        console.error('❌ 未能解析到有效的岗位数据');
+        onUploadError('未能解析到有效的岗位数据，请检查Excel格式是否正确');
       }
     } catch (error) {
+      console.error('❌ 文件解析失败:', error);
       onUploadError(`文件解析失败: ${error}`);
     } finally {
       setUploading(false);
