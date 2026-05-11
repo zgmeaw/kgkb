@@ -262,14 +262,23 @@ class StorageService {
       throw new Error('未找到用户密码，无法使用云端存储');
     }
 
+    // 从 localStorage 读取其他数据（如果存在）
+    const announcements = this.get<any[]>(STORAGE_KEYS.ANNOUNCEMENTS) || [];
+    const positions = this.get<any[]>(STORAGE_KEYS.POSITIONS) || [];
+    const userProfile = this.get<any>(STORAGE_KEYS.USER_PROFILE) || null;
+    const scoreHistory = this.get<any[]>(STORAGE_KEYS.SCORE_HISTORY) || [];
+
     // 构造云端数据格式 - 符合 CloudData 接口
+    // 根据当前保存的 key，更新对应的字段
     const cloudData: any = {
-      announcements: key === 'announcements' ? value : [],
-      positions: key === 'positions' ? value : [],
-      userProfile: key === 'userProfile' ? value : null,
-      scoreHistory: key === 'scoreHistory' ? value : [],
+      announcements: key === STORAGE_KEYS.ANNOUNCEMENTS ? value : announcements,
+      positions: key === STORAGE_KEYS.POSITIONS ? value : positions,
+      userProfile: key === STORAGE_KEYS.USER_PROFILE ? value : userProfile,
+      scoreHistory: key === STORAGE_KEYS.SCORE_HISTORY ? value : scoreHistory,
       lastUpdated: new Date().toISOString(),
     };
+
+    console.log(`📤 准备上传到云端: ${key}, 岗位数量: ${Array.isArray(cloudData.positions) ? cloudData.positions.length : 0}`);
 
     // 上传到云端存储
     await cloudStorageService.uploadData(cloudData, userPassword);
