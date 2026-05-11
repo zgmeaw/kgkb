@@ -1,18 +1,9 @@
 /**
  * GitHub 数据管理服务
- * 通过 GitHub Actions 管理用户数据文件
+ * 直接使用 GitHub Contents API 管理用户数据文件
  */
 
 import { UserProfile, Announcement, Position } from '@/types';
-
-interface GitHubDispatchPayload {
-  event_type: string;
-  client_payload: {
-    filename: string;
-    data: string;
-    filepath?: string;
-  };
-}
 
 class GitHubDataService {
   /**
@@ -27,27 +18,53 @@ class GitHubDataService {
   }
 
   /**
-   * 触发 GitHub Actions 工作流
+   * 使用 GitHub Contents API 创建或更新文件
    */
-  private async dispatchAction(payload: GitHubDispatchPayload): Promise<void> {
+  private async createOrUpdateFile(path: string, content: string, message: string): Promise<void> {
     const config = this.getConfig();
     
-    if (!config.token || !config.owner || !config.repo) {
-      console.warn('GitHub 配置不完整，跳过文件保存');
+    if (!config.token) {
+      console.warn('GitHub Token 未配置，跳过文件保存');
       return;
     }
 
     try {
+      // 先尝试获取文件，看是否已存在
+      let sha: string | undefined;
+      try {
+        const getResponse = await fetch(
+          `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${path}`,
+          {
+            headers: {
+              'Authorization': `token ${config.token}`,
+              'Accept': 'application/vnd.github.v3+json',
+            },
+          }
+        );
+        
+        if (getResponse.ok) {
+          const fileData = await getResponse.json();
+          sha = fileData.sha;
+        }
+      } catch (error) {
+        // 文件不存在，继续创建
+      }
+
+      // 创建或更新文件
       const response = await fetch(
-        `https://api.github.com/repos/${config.owner}/${config.repo}/dispatches`,
+        `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${path}`,
         {
-          method: 'POST',
+          method: 'PUT',
           headers: {
             'Authorization': `token ${config.token}`,
             'Accept': 'application/vnd.github.v3+json',
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({
+            message,
+            content: btoa(unescape(encodeURIComponent(content))), // Base64 编码
+            sha, // 如果文件已存在，需要提供 sha
+          }),
         }
       );
 
@@ -56,9 +73,9 @@ class GitHubDataService {
         throw new Error(`GitHub API 错误: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
-      console.log(`✅ GitHub Actions 已触发: ${payload.event_type}`);
+      console.log(`✅ 文件已保存: ${path}`);
     } catch (error) {
-      console.error('❌ GitHub Actions 触发失败:', error);
+      console.error('❌ 文件保存失败:', error);
       throw error;
     }
   }
@@ -69,6 +86,7 @@ class GitHubDataService {
   async saveUserProfile(profile: UserProfile): Promise<void> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `profile_${profile.id}_${timestamp}.json`;
+    const path = `user-data/profiles/${filename}`;
     
     const data = {
       type: 'user_profile',
@@ -82,13 +100,10 @@ class GitHubDataService {
       }
     };
 
-    await this.dispatchAction({
-      event_type: 'save-user-data',
-      client_payload: {
-        filename,
-        data: JSON.stringify(data, null, 2),
-      },
-    });
+    const content = JSON.stringify(data, null, 2);
+    const message = `保存用户档案: ${profile.name} - ${timestamp}`;
+    
+    await this.createOrUpdateFile(path, content, message);
   }
 
   /**
@@ -97,6 +112,7 @@ class GitHubDataService {
   async saveAnnouncement(announcement: Announcement): Promise<void> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `announcement_${announcement.id}_${timestamp}.json`;
+    const path = `user-data/announcements/${filename}`;
     
     const data = {
       type: 'announcement',
@@ -111,41 +127,81 @@ class GitHubDataService {
       }
     };
 
-    await this.dispatchAction({
-      event_type: 'save-announcement',
-      client_payload: {
-        filename,
-        data: JSON.stringify(data, null, 2),
-      },
-    });
+    const content = JSON.stringify(data, null, 2);
+    const message = `保存公告: ${announcement.title} - ${timestamp}`;
+    
+    await this.createOrUpdateFile(path, content, message);
   }
 
   /**
-   * 保存岗位数据到文件
+   * 保存岗位数据到文件（分批处理大数据）
    */
   async savePositions(positions: Position[], announcementId: string): Promise<void> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const filename = `positions_${announcementId}_${timestamp}.json`;
     
-    const data = {
-      type: 'positions',
-      version: '1.0',
-      timestamp: new Date().toISOString(),
-      data: positions,
-      metadata: {
-        announcementId,
-        positionCount: positions.length,
-        importDate: new Date().toISOString(),
-      }
-    };
+    // 如果岗位数量很大，分批保存
+    const BATCH_SIZE = 1000; // 每批1000个岗位
+    const totalBatches = Math.ceil(positions.length / BATCH_SIZE);
+    
+    if (totalBatches > 1) {
+      console.log(`📦 岗位数据较大，分 ${totalBatches} 批保存...`);
+      
+      for (let i = 0; i < totalBatches; i++) {
+        const start = i * BATCH_SIZE;
+        const end = Math.min(start + BATCH_SIZE, positions.length);
+        const batch = positions.slice(start, end);
+        
+        const filename = `positions_${announcementId}_batch${i + 1}_${timestamp}.json`;
+        const path = `user-data/positions/${filename}`;
+        
+        const data = {
+          type: 'positions',
+          version: '1.0',
+          timestamp: new Date().toISOString(),
+          batchInfo: {
+            batchNumber: i + 1,
+            totalBatches,
+            batchSize: batch.length,
+            totalPositions: positions.length,
+          },
+          data: batch,
+          metadata: {
+            announcementId,
+            positionCount: batch.length,
+            importDate: new Date().toISOString(),
+          }
+        };
 
-    await this.dispatchAction({
-      event_type: 'save-positions',
-      client_payload: {
-        filename,
-        data: JSON.stringify(data, null, 2),
-      },
-    });
+        const content = JSON.stringify(data, null, 2);
+        const message = `保存岗位数据 (批次 ${i + 1}/${totalBatches}): ${announcementId} - ${timestamp}`;
+        
+        await this.createOrUpdateFile(path, content, message);
+        console.log(`✅ 批次 ${i + 1}/${totalBatches} 已保存 (${batch.length} 个岗位)`);
+      }
+      
+      console.log(`🎉 所有岗位数据已保存完成！共 ${positions.length} 个岗位，分 ${totalBatches} 个文件`);
+    } else {
+      // 数据量小，直接保存
+      const filename = `positions_${announcementId}_${timestamp}.json`;
+      const path = `user-data/positions/${filename}`;
+      
+      const data = {
+        type: 'positions',
+        version: '1.0',
+        timestamp: new Date().toISOString(),
+        data: positions,
+        metadata: {
+          announcementId,
+          positionCount: positions.length,
+          importDate: new Date().toISOString(),
+        }
+      };
+
+      const content = JSON.stringify(data, null, 2);
+      const message = `保存岗位数据: ${announcementId} - ${timestamp}`;
+      
+      await this.createOrUpdateFile(path, content, message);
+    }
   }
 
   /**
@@ -154,6 +210,7 @@ class GitHubDataService {
   async createBackup(type: 'full' | 'profiles' | 'announcements' | 'positions', data: any): Promise<void> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `backup_${type}_${timestamp}.json`;
+    const path = `user-data/backups/${filename}`;
     
     const backupData = {
       type: 'backup',
@@ -167,27 +224,67 @@ class GitHubDataService {
       }
     };
 
-    await this.dispatchAction({
-      event_type: 'save-user-data',
-      client_payload: {
-        filename: `backups/${filename}`,
-        data: JSON.stringify(backupData, null, 2),
-      },
-    });
+    const content = JSON.stringify(backupData, null, 2);
+    const message = `创建备份: ${type} - ${timestamp}`;
+    
+    await this.createOrUpdateFile(path, content, message);
   }
 
   /**
    * 删除数据文件
    */
   async deleteDataFile(filepath: string): Promise<void> {
-    await this.dispatchAction({
-      event_type: 'delete-data',
-      client_payload: {
-        filename: '',
-        data: '',
-        filepath,
-      },
-    });
+    const config = this.getConfig();
+    
+    if (!config.token) {
+      console.warn('GitHub Token 未配置，跳过文件删除');
+      return;
+    }
+
+    try {
+      // 先获取文件的 SHA
+      const getResponse = await fetch(
+        `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${filepath}`,
+        {
+          headers: {
+            'Authorization': `token ${config.token}`,
+            'Accept': 'application/vnd.github.v3+json',
+          },
+        }
+      );
+
+      if (!getResponse.ok) {
+        throw new Error('文件不存在或无法访问');
+      }
+
+      const fileData = await getResponse.json();
+      
+      // 删除文件
+      const deleteResponse = await fetch(
+        `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${filepath}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `token ${config.token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: `删除文件: ${filepath}`,
+            sha: fileData.sha,
+          }),
+        }
+      );
+
+      if (!deleteResponse.ok) {
+        throw new Error(`删除失败: ${deleteResponse.status}`);
+      }
+
+      console.log(`✅ 文件已删除: ${filepath}`);
+    } catch (error) {
+      console.error('❌ 文件删除失败:', error);
+      throw error;
+    }
   }
 
   /**
@@ -195,7 +292,7 @@ class GitHubDataService {
    */
   isConfigured(): boolean {
     const config = this.getConfig();
-    return !!(config.token && config.owner && config.repo);
+    return !!config.token;
   }
 
   /**
