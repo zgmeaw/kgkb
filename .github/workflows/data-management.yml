@@ -1,8 +1,13 @@
-name: Data Management
+name: Data Management (DISABLED - Using R2 Storage)
 
+# 已禁用：现在使用 Cloudflare R2 存储，不再需要 GitHub Actions
+# on:
+#   repository_dispatch:
+#     types: [save-user-data, save-announcement, save-positions, delete-data]
+
+# 手动触发（仅用于测试或紧急恢复）
 on:
-  repository_dispatch:
-    types: [save-user-data, save-announcement, save-positions, delete-data]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -12,52 +17,59 @@ jobs:
   manage-data:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create user-data directory
+      - name: Workflow Disabled
         run: |
-          mkdir -p user-data/profiles
-          mkdir -p user-data/announcements
-          mkdir -p user-data/positions
-          mkdir -p user-data/backups
+          echo "⚠️ 此工作流已禁用"
+          echo "现在使用 Cloudflare R2 存储数据"
+          echo "如需启用，请编辑 .github/workflows/data-management.yml"
+          
+      # 以下步骤已注释，如需恢复可取消注释
+      # - name: Checkout
+      #   uses: actions/checkout@v4
+      #   with:
+      #     token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Save User Profile
-        if: github.event.action == 'save-user-data'
-        run: |
-          echo '${{ github.event.client_payload.data }}' > user-data/profiles/${{ github.event.client_payload.filename }}
-          echo "Saved user profile: ${{ github.event.client_payload.filename }}"
+      # - name: Create user-data directory
+      #   run: |
+      #     mkdir -p user-data/profiles
+      #     mkdir -p user-data/announcements
+      #     mkdir -p user-data/positions
+      #     mkdir -p user-data/backups
 
-      - name: Save Announcement
-        if: github.event.action == 'save-announcement'
-        run: |
-          echo '${{ github.event.client_payload.data }}' > user-data/announcements/${{ github.event.client_payload.filename }}
-          echo "Saved announcement: ${{ github.event.client_payload.filename }}"
+      # - name: Save User Profile
+      #   if: github.event.action == 'save-user-data'
+      #   run: |
+      #     echo '${{ github.event.client_payload.data }}' > user-data/profiles/${{ github.event.client_payload.filename }}
+      #     echo "Saved user profile: ${{ github.event.client_payload.filename }}"
 
-      - name: Save Positions
-        if: github.event.action == 'save-positions'
-        run: |
-          echo '${{ github.event.client_payload.data }}' > user-data/positions/${{ github.event.client_payload.filename }}
-          echo "Saved positions: ${{ github.event.client_payload.filename }}"
+      # - name: Save Announcement
+      #   if: github.event.action == 'save-announcement'
+      #   run: |
+      #     echo '${{ github.event.client_payload.data }}' > user-data/announcements/${{ github.event.client_payload.filename }}
+      #     echo "Saved announcement: ${{ github.event.client_payload.filename }}"
 
-      - name: Delete Data
-        if: github.event.action == 'delete-data'
-        run: |
-          if [ -f "${{ github.event.client_payload.filepath }}" ]; then
-            rm "${{ github.event.client_payload.filepath }}"
-            echo "Deleted: ${{ github.event.client_payload.filepath }}"
-          fi
+      # - name: Save Positions
+      #   if: github.event.action == 'save-positions'
+      #   run: |
+      #     echo '${{ github.event.client_payload.data }}' > user-data/positions/${{ github.event.client_payload.filename }}
+      #     echo "Saved positions: ${{ github.event.client_payload.filename }}"
 
-      - name: Commit and Push
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add user-data/
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Data update: ${{ github.event.action }} - $(date '+%Y-%m-%d %H:%M:%S')"
-            git push
-          fi
+      # - name: Delete Data
+      #   if: github.event.action == 'delete-data'
+      #   run: |
+      #     if [ -f "${{ github.event.client_payload.filepath }}" ]; then
+      #       rm "${{ github.event.client_payload.filepath }}"
+      #       echo "Deleted: ${{ github.event.client_payload.filepath }}"
+      #     fi
+
+      # - name: Commit and Push
+      #   run: |
+      #     git config --local user.email "action@github.com"
+      #     git config --local user.name "GitHub Action"
+      #     git add user-data/
+      #     if git diff --staged --quiet; then
+      #       echo "No changes to commit"
+      #     else
+      #       git commit -m "Data update: ${{ github.event.action }} - $(date '+%Y-%m-%d %H:%M:%S')"
+      #       git push
+      #     fi

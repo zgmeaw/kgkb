@@ -1,11 +1,14 @@
 /**
  * GitHub 数据管理服务
- * 直接使用 GitHub Contents API 管理用户数据文件
+ * ⚠️ 已禁用：现在使用 Cloudflare R2 存储
+ * 此服务保留用于紧急恢复或手动备份
  */
 
 import { UserProfile, Announcement, Position } from '@/types';
 
 class GitHubDataService {
+  private enabled = false; // 🔒 禁用 GitHub 文件存储
+
   /**
    * 从 localStorage 获取 GitHub 配置
    */
@@ -18,9 +21,22 @@ class GitHubDataService {
   }
 
   /**
+   * 检查服务是否启用
+   */
+  private checkEnabled(): boolean {
+    if (!this.enabled) {
+      console.log('ℹ️ GitHub 文件存储已禁用，使用 Cloudflare R2 存储');
+      return false;
+    }
+    return true;
+  }
+
+  /**
    * 使用 GitHub Contents API 创建或更新文件
    */
   private async createOrUpdateFile(path: string, content: string, message: string): Promise<void> {
+    if (!this.checkEnabled()) return;
+    
     const config = this.getConfig();
     
     if (!config.token) {
@@ -84,6 +100,8 @@ class GitHubDataService {
    * 保存用户档案到文件
    */
   async saveUserProfile(profile: UserProfile): Promise<void> {
+    if (!this.checkEnabled()) return;
+    
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `profile_${profile.id}_${timestamp}.json`;
     const path = `user-data/profiles/${filename}`;
@@ -110,6 +128,8 @@ class GitHubDataService {
    * 保存公告数据到文件
    */
   async saveAnnouncement(announcement: Announcement): Promise<void> {
+    if (!this.checkEnabled()) return;
+    
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `announcement_${announcement.id}_${timestamp}.json`;
     const path = `user-data/announcements/${filename}`;
@@ -137,6 +157,8 @@ class GitHubDataService {
    * 保存岗位数据到文件（分批处理大数据，添加延迟避免并发）
    */
   async savePositions(positions: Position[], announcementId: string): Promise<void> {
+    if (!this.checkEnabled()) return;
+    
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     
     // 如果岗位数量很大，分批保存
@@ -213,6 +235,8 @@ class GitHubDataService {
    * 创建数据备份
    */
   async createBackup(type: 'full' | 'profiles' | 'announcements' | 'positions', data: any): Promise<void> {
+    if (!this.checkEnabled()) return;
+    
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `backup_${type}_${timestamp}.json`;
     const path = `user-data/backups/${filename}`;
@@ -239,6 +263,8 @@ class GitHubDataService {
    * 删除数据文件
    */
   async deleteDataFile(filepath: string): Promise<void> {
+    if (!this.checkEnabled()) return;
+    
     const config = this.getConfig();
     
     if (!config.token) {
@@ -296,14 +322,21 @@ class GitHubDataService {
    * 检查 GitHub 配置是否可用
    */
   isConfigured(): boolean {
-    const config = this.getConfig();
-    return !!config.token;
+    return this.enabled && !!this.getConfig().token;
   }
 
   /**
    * 获取配置状态
    */
-  getConfigStatus(): { configured: boolean; missing: string[] } {
+  getConfigStatus(): { configured: boolean; missing: string[]; disabled: boolean } {
+    if (!this.enabled) {
+      return {
+        configured: false,
+        missing: [],
+        disabled: true,
+      };
+    }
+    
     const config = this.getConfig();
     const missing: string[] = [];
     
@@ -312,6 +345,7 @@ class GitHubDataService {
     return {
       configured: missing.length === 0,
       missing,
+      disabled: false,
     };
   }
 
@@ -327,6 +361,22 @@ class GitHubDataService {
    */
   clearToken(): void {
     localStorage.removeItem('github_token');
+  }
+
+  /**
+   * 启用 GitHub 文件存储（仅用于紧急恢复）
+   */
+  enable(): void {
+    this.enabled = true;
+    console.warn('⚠️ GitHub 文件存储已启用');
+  }
+
+  /**
+   * 禁用 GitHub 文件存储
+   */
+  disable(): void {
+    this.enabled = false;
+    console.log('ℹ️ GitHub 文件存储已禁用');
   }
 }
 
